@@ -1,0 +1,17 @@
+# Model price map for cost computation. Values are USD per million tokens.
+# Source: Anthropic published rate card. Update when prices change.
+#
+# A model not present here causes load_price_map() lookups in the adapter to
+# raise — by design, so we never silently report $0 for an unknown model.
+
+claude-opus-4-7:
+  input_per_million: 15.0
+  output_per_million: 75.0
+
+claude-sonnet-4-6:
+  input_per_million: 3.0
+  output_per_million: 15.0
+
+claude-haiku-4-5-20251001:
+  input_per_million: 0.80
+  output_per_million: 4.0

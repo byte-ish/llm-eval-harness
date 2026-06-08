@@ -23,3 +23,5 @@ repos:
       - id: mypy
         files: ^harness/
         args: [--strict]
+        additional_dependencies:
+          - types-pyyaml>=6.0
