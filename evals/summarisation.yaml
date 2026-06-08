@@ -1,0 +1,124 @@
+name: summarisation
+dataset_version: "1.0.0"
+
+default_system: |
+  You are a financial summarisation assistant. Given a snippet of business
+  news, produce a one-paragraph factual summary that names the company, the
+  headline number(s), the time period, and the direction of change. Use only
+  information present in the input.
+
+cases:
+  # ----- earnings_summary -----
+  - id: earnings_001
+    category: earnings_summary
+    scorer: exact_match
+    user: |
+      Acme Corp announced Q3 2026 revenue of $4.2 billion, up 18% year-over-year,
+      beating analyst expectations of $3.9 billion. Net income came in at
+      $620 million.
+    expected_contains: ["Acme", "Q3", "$4.2 billion", "18%"]
+
+  - id: earnings_002
+    category: earnings_summary
+    scorer: exact_match
+    user: |
+      Northwind Logistics reported a Q2 loss of $44 million, narrower than the
+      $61 million loss in the prior-year quarter. Revenue rose 7% to
+      $1.1 billion.
+    expected_contains: ["Northwind", "Q2", "loss", "$44 million", "7%"]
+
+  - id: earnings_003
+    category: earnings_summary
+    scorer: exact_match
+    user: |
+      Helios Semiconductor posted full-year 2025 revenue of $12.6 billion, down
+      4% from 2024. Operating margin contracted to 11% from 17%.
+    expected_contains: ["Helios", "$12.6 billion", "4%", "operating margin"]
+
+  # ----- guidance_change -----
+  - id: guidance_001
+    category: guidance_change
+    scorer: exact_match
+    user: |
+      Brightline Software raised its full-year 2026 revenue guidance to a range
+      of $2.8 billion to $2.9 billion, up from the prior range of $2.6 billion
+      to $2.7 billion, citing stronger-than-expected enterprise renewals.
+    expected_contains: ["Brightline", "raised", "guidance", "$2.8 billion"]
+
+  - id: guidance_002
+    category: guidance_change
+    scorer: exact_match
+    user: |
+      Quanta Energy cut its FY26 EBITDA outlook to $900 million from a prior
+      midpoint of $1.05 billion, citing weaker LNG spot prices and a delayed
+      pipeline project in Texas.
+    expected_contains: ["Quanta", "cut", "EBITDA", "$900 million"]
+
+  - id: guidance_003
+    category: guidance_change
+    scorer: exact_match
+    user: |
+      Vertex Pharmaceuticals reaffirmed its 2026 product revenue guidance of
+      $11.0 billion to $11.5 billion, despite Q1 coming in at the lower end of
+      expectations.
+    expected_contains: ["Vertex", "reaffirmed", "guidance", "$11"]
+
+  # ----- ma_activity -----
+  - id: ma_001
+    category: ma_activity
+    scorer: exact_match
+    user: |
+      Apex Industrial announced today it will acquire midstream operator
+      Caldera Pipeline for $7.4 billion in cash, expected to close in Q4 2026
+      pending regulatory approval.
+    expected_contains: ["Apex", "acquire", "Caldera", "$7.4 billion"]
+
+  - id: ma_002
+    category: ma_activity
+    scorer: exact_match
+    user: |
+      Solstice Bank Group terminated its planned $3.2 billion merger with
+      Riverstone Financial after antitrust regulators in the EU signalled they
+      would block the deal.
+    expected_contains: ["Solstice", "terminated", "merger", "Riverstone"]
+
+  - id: ma_003
+    category: ma_activity
+    scorer: exact_match
+    user: |
+      Private equity firm Glendale Capital completed its $5.8 billion
+      take-private of TerraSat Communications, with TerraSat shareholders
+      receiving $42 per share in cash.
+    expected_contains: ["Glendale", "TerraSat", "$5.8 billion", "take-private"]
+
+  # ----- regulatory_notice -----
+  - id: reg_001
+    category: regulatory_notice
+    scorer: exact_match
+    user: |
+      The SEC charged Beacon Capital Advisors with failing to disclose material
+      conflicts of interest in its proprietary trading desk between 2022 and
+      2024. Beacon agreed to pay $185 million to settle the matter.
+    expected_contains: ["SEC", "Beacon Capital", "$185 million", "settle"]
+
+  - id: reg_002
+    category: regulatory_notice
+    scorer: exact_match
+    user: |
+      The European Commission opened a formal antitrust investigation into
+      Lumina Technologies' bundling of its cloud storage and AI inference
+      services, sending a Statement of Objections.
+    expected_contains:
+      - "European Commission"
+      - "antitrust"
+      - "Lumina"
+      - "Statement of Objections"
+
+  - id: reg_003
+    category: regulatory_notice
+    scorer: exact_match
+    user: |
+      The FDA granted accelerated approval to NovaBio's Nuvarex for the
+      treatment of refractory multiple myeloma, based on Phase II data showing
+      a 41% objective response rate.
+    expected_contains: ["FDA", "NovaBio", "Nuvarex", "41%"]

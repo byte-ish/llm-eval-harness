@@ -17,7 +17,10 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Topic :: Software Development :: Testing",
 ]
-dependencies = []
+dependencies = [
+    "pyyaml>=6.0",
+    "rich>=13.7",
+]
 
 [dependency-groups]
 dev = [
@@ -25,6 +28,7 @@ dev = [
     "pre-commit>=3.7",
     "pytest>=8.0",
     "ruff>=0.6",
+    "types-pyyaml>=6.0",
 ]
 
 [tool.hatch.build.targets.wheel]
