@@ -10,7 +10,7 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phase 0 — AI-424 — scaffold** (active branch: `feat/AI-424-phase-0-scaffold`)
+**Phase 1 — AI-425 — data contracts + first scorer** (active branch: `feat/AI-425-phase-1-contracts`)
 
 Update this line when a phase merges and the next phase begins.
 
