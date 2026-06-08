@@ -1,0 +1,81 @@
+sequenceDiagram
+    autonumber
+    actor Dev as Developer / CI Runner
+    participant CLI as run_evals.py
+    participant Cfg as harness/config.py
+    participant Run as harness/runner.py
+    participant Ada as AnthropicAdapter
+    participant API as Anthropic API
+    participant Reg as Scorer Registry
+    participant Sc as Scorer (exact / regex / judge)
+    participant St as Store (filesystem)
+    participant Rgr as harness/regression.py
+    participant Rpt as harness/report.py
+
+    Dev->>CLI: docker run llm-eval-harness run --suite X --baseline B --max-cost 1.00
+    CLI->>CLI: load .env, parse args, init logger (json or human)
+    CLI->>Cfg: load_suite(path)
+    Cfg->>Cfg: parse YAML, validate dataset_version, resolve per-case system/user
+    Cfg-->>CLI: EvalSuite (cases tuple)
+    CLI->>Cfg: load_price_map()
+    Cfg-->>CLI: PriceMap
+    CLI->>CLI: pre-flight cost estimate
+    alt estimate exceeds max-cost and no force flag
+        CLI-->>Dev: exit 3 budget refused
+    end
+    CLI->>Run: run_suite(suite, model, concurrency, timeout, temperature)
+    Run->>Run: open Semaphore(concurrency), start rich.progress
+
+    loop For each case (bounded by semaphore)
+        Run->>Ada: complete(system, user, temperature, timeout)
+        Ada->>API: POST /v1/messages (with retry policy)
+        alt 429 / 5xx / connection error
+            API-->>Ada: error
+            Ada->>Ada: exp-backoff + jitter (up to 3 attempts)
+            Ada->>API: retry
+        end
+        API-->>Ada: response (text, usage, resolved_model_id)
+        Ada-->>Run: AdapterResponse
+        Run->>Reg: get(case.scorer)
+        Reg-->>Run: Scorer instance
+        Run->>Sc: score(response, case)
+        alt scorer is llm_judge
+            Sc->>Ada: complete(judge_system, judge_user, judge model)
+            Ada->>API: POST /v1/messages
+            API-->>Ada: judge JSON
+            Ada-->>Sc: AdapterResponse
+            Sc->>Sc: parse score+reason, normalise 0..1
+            alt parse fails
+                Sc-->>Run: ScorerResult with error
+            end
+        end
+        Sc-->>Run: ScorerResult
+        Run->>Run: append EvalResult, update progress
+    end
+
+    Run->>Run: assemble RunReport with dataset_version, resolved model ID, harness_version
+    Run->>St: save(report)
+    St-->>Run: results path
+    Run->>Rgr: compare_to_baseline(report, baseline_path)
+    Rgr->>St: load(baseline_path)
+    St-->>Rgr: baseline RunReport
+    alt baseline.dataset_version differs from current.dataset_version
+        alt allow-dataset-mismatch flag set
+            Rgr->>Rgr: emit stderr warning, proceed
+        else
+            Rgr-->>CLI: error dataset changed, refresh baseline
+            CLI-->>Dev: exit 2
+        end
+    end
+    Rgr->>Rgr: per-category delta, flag drops greater than 0.05
+    Rgr-->>Run: RegressionDiff
+    Run->>Rpt: render(report, diff)
+    Rpt->>Rpt: Jinja2 template to HTML
+    Rpt-->>Run: report HTML path
+    Run-->>CLI: RunReport and RegressionDiff
+    CLI->>Dev: rich summary table to stdout
+    alt regression detected
+        CLI-->>Dev: exit 1
+    else
+        CLI-->>Dev: exit 0
+    end
