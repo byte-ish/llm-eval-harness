@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+
+# Tooling caches
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Secrets
+.env
+
+# Eval outputs — keep baseline.json, drop everything else
+results/*
+!results/baseline.json
+
+# Reports — keep the committed sample, drop everything else
+reports/*
+!reports/sample_report.html
+
+# Mermaid render artifacts
+diagrams/*.png
+
+# Editors
+.idea/
+.vscode/
+*.swp
+.DS_Store
