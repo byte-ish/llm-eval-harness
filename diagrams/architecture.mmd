@@ -1,0 +1,88 @@
+flowchart TB
+    subgraph Host["Developer workstation OR CI runner"]
+        ENV[".env file<br/>ANTHROPIC_API_KEY"]
+        SUITE["evals/*.yaml<br/>(dataset_version,<br/>default_system, cases)"]
+        BASELINE["results/baseline.json"]
+        RESULTS["results/run_id.json"]
+        REPORTS["reports/run_id.html"]
+    end
+
+    subgraph Container["llm-eval-harness Docker image"]
+        subgraph CLI["CLI entrypoint (run_evals.py)"]
+            ARG["Argparse + .env loader"]
+            BUDGET["Pre-flight budget guard"]
+        end
+
+        subgraph Config["Config layer (harness/config.py)"]
+            LOAD["YAML loader<br/>resolves per-case prompts<br/>validates dataset_version"]
+            PRICE["Model price map"]
+        end
+
+        subgraph Runner["Runner (harness/runner.py)"]
+            SEM["Async semaphore<br/>(concurrency bound)"]
+            ISO["Per-case error isolation"]
+            PROG["rich.progress bar"]
+        end
+
+        subgraph Adapter["Adapter layer (harness/adapters/)"]
+            BASE["ModelAdapter Protocol"]
+            ANTHROPIC["AnthropicAdapter<br/>temp=0, retry+backoff,<br/>per-request timeout,<br/>resolved model ID"]
+            OPENAI["OpenAIAdapter<br/>(Phase 7)"]
+            BEDROCK["BedrockAdapter<br/>(Phase 7)"]
+        end
+
+        subgraph Scorer["Scorer layer (harness/scorers/)"]
+            SREG["Scorer Registry<br/>name to instance"]
+            EXACT["exact_match"]
+            REGEX["regex_match"]
+            JUDGE["llm_judge<br/>(separate judge model)"]
+            EMBED["embedding_sim<br/>(Phase 7)"]
+        end
+
+        subgraph Output["Output layer"]
+            STORE["Store Protocol<br/>(FilesystemStore default)"]
+            REG["regression.py<br/>dataset_version check<br/>+ category-delta flagging"]
+            REPORT["report.py + Jinja2"]
+            SUMMARY["rich summary table"]
+        end
+
+        LOG["Structured logger<br/>(JSON in CI, human in dev)"]
+    end
+
+    subgraph External["External"]
+        ANTHROPIC_API["Anthropic API<br/>api.anthropic.com"]
+        OPENAI_API["OpenAI API<br/>(Phase 7)"]
+        BEDROCK_API["AWS Bedrock<br/>(Phase 7)"]
+    end
+
+    ENV --> ARG
+    SUITE --> LOAD
+    LOAD --> Runner
+    PRICE --> BUDGET
+    ARG --> BUDGET
+    BUDGET --> Runner
+    Runner --> SEM
+    SEM --> ANTHROPIC
+    SEM --> OPENAI
+    SEM --> BEDROCK
+    ANTHROPIC --> ANTHROPIC_API
+    OPENAI --> OPENAI_API
+    BEDROCK --> BEDROCK_API
+    BASE -.implements.-> ANTHROPIC
+    BASE -.implements.-> OPENAI
+    BASE -.implements.-> BEDROCK
+    Runner --> SREG
+    SREG --> EXACT
+    SREG --> REGEX
+    SREG --> JUDGE
+    SREG --> EMBED
+    JUDGE -.calls.-> ANTHROPIC
+    Runner --> STORE
+    STORE --> RESULTS
+    Runner --> REG
+    BASELINE --> REG
+    REG --> REPORT
+    REPORT --> REPORTS
+    Runner --> SUMMARY
+    Runner --> LOG
+    Adapter --> LOG

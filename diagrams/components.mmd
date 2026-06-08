@@ -1,0 +1,32 @@
+flowchart LR
+    subgraph L1["Test-suite layer"]
+        Y["YAML dataset<br/>+ dataset_version"]
+        EC["EvalSuite / EvalCase<br/>(Phase 1)"]
+        Y --> EC
+    end
+
+    subgraph L2["Runner layer"]
+        RN["Async dispatch<br/>(Phase 2)"]
+        MD["Metadata capture<br/>resolved model ID,<br/>tokens, latency, cost"]
+        RN --> MD
+    end
+
+    subgraph L3["Scorer layer"]
+        SR["Scorer registry<br/>(Phase 3)"]
+        SC["exact / regex / judge / embed"]
+        SR --> SC
+    end
+
+    subgraph L4["Output layer"]
+        ST["Result store<br/>(Phase 2)"]
+        RG["Regression detector<br/>(Phase 5)"]
+        RP["HTML report<br/>(Phase 5)"]
+        CI["CI gate via exit code<br/>(Phase 6)"]
+        ST --> RG
+        RG --> RP
+        RG --> CI
+    end
+
+    L1 --> L2
+    L2 --> L3
+    L3 --> L4
