@@ -62,7 +62,7 @@ Do not add anything outside this list without asking first.
 |---|---|---|
 | `anthropic` | Anthropic SDK (async client) | Phase 2 |
 | `pyyaml` | Load eval datasets | Phase 1 |
-| `pytest` | Test runner | Phase 1 |
+| `pytest` | Test runner | Phase 0 |
 | `pytest-asyncio` | Async test support | Phase 2 |
 | `rich` | Console summary tables + progress bar | Phase 1 |
 | `jinja2` | HTML report templating | Phase 5 |
