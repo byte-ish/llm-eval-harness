@@ -10,7 +10,7 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phase 6 — AI-430 — CI workflow + README + sample artifacts + Docker** (active branch: `feat/AI-430-phase-6-ci-readme`)
+**Phase 7 — AI-431 — Multi-model comparison (OpenAI + Bedrock adapters) — stretch** (active branch: `feat/AI-431-phase-7-multi-model`)
 
 Update this line when a phase merges and the next phase begins.
 

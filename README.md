@@ -51,7 +51,27 @@ uv run python run_evals.py \
   --model claude-opus-4-7 \
   --baseline results/baseline.json \
   --max-cost 0.50
+
+# 5. Compare two providers side-by-side on the same suite (Phase 7)
+export OPENAI_API_KEY=...
+uv run python run_evals.py \
+  --suite summarisation \
+  --compare anthropic:claude-haiku-4-5-20251001,openai:gpt-4o-mini \
+  --max-cost 0.50
 ```
+
+### Model spec syntax
+
+Models are named `<provider>:<model_id>`:
+
+| Spec | Provider | Resolves to |
+| --- | --- | --- |
+| `anthropic:claude-opus-4-7` | Anthropic API | `AnthropicAdapter` |
+| `openai:gpt-4o-mini` | OpenAI API | `OpenAIAdapter` |
+| `bedrock:anthropic.claude-haiku-4-5-v1:0` | AWS Bedrock | `BedrockAdapter` |
+| `claude-opus-4-7` (bare) | Anthropic (default) | `AnthropicAdapter` |
+
+`--compare` accepts a comma-separated list of specs and emits a side-by-side HTML report at `reports/<run_id>_compare.html` showing per-category pass-rate deltas, cost delta, and latency delta against the first model (the reference).
 
 Exit codes:
 

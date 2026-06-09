@@ -1,11 +1,19 @@
 """CLI entrypoint for the eval harness.
 
-Usage:
+Usage (single model):
   python run_evals.py --suite summarisation --model claude-opus-4-7
+  python run_evals.py --suite summarisation --model openai:gpt-4o-mini
+
+Usage (multi-model comparison, Phase 7):
+  python run_evals.py --suite summarisation \\
+      --compare anthropic:claude-haiku-4-5-20251001,openai:gpt-4o-mini
+
+Provider-prefix syntax: `<provider>:<model_id>`. Bare IDs default to
+`anthropic` for backward compatibility.
 
 Exit codes:
-  0 - success (no regression)
-  1 - regression detected vs --baseline
+  0 - success (no regression in single-model mode; comparison ran)
+  1 - regression detected vs --baseline (single-model mode only)
   2 - dataset_version mismatch between --baseline and current run
   3 - pre-flight budget refused (use --force to bypass)
 """
@@ -19,17 +27,19 @@ from rich.console import Console
 from rich.table import Table
 
 from harness import __version__
-from harness.adapters.anthropic import AnthropicAdapter
 from harness.adapters.base import ModelAdapter
+from harness.adapters.factory import ModelSpec, build_adapter, parse_model_spec
 from harness.budget import estimate_cost, make_cost_fn
+from harness.compare import ComparisonReport, compare_reports
 from harness.config import PriceEntry, load_price_map, load_suite
-from harness.models import RunReport
+from harness.models import EvalSuite, RunReport
 from harness.regression import (
     DatasetVersionMismatch,
     RegressionDiff,
     compare_to_baseline,
 )
 from harness.report import render as render_report
+from harness.report import render_comparison
 from harness.runner import run_suite
 from harness.scorers import DEFAULT_SCORER_NAMES, build_default_registry
 from harness.store import load as load_report
@@ -49,8 +59,21 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--suite", required=True, help="Suite name under --evals-dir (e.g. summarisation)"
     )
-    parser.add_argument(
-        "--model", required=True, help="Resolved provider model ID (e.g. claude-opus-4-7)"
+    model_group = parser.add_mutually_exclusive_group(required=True)
+    model_group.add_argument(
+        "--model",
+        help=(
+            "Provider:model_id spec (e.g. anthropic:claude-opus-4-7, openai:gpt-4o-mini). "
+            "Bare IDs default to anthropic."
+        ),
+    )
+    model_group.add_argument(
+        "--compare",
+        help=(
+            "Comma-separated provider:model_id specs to run side-by-side "
+            "(e.g. anthropic:claude-haiku-4-5-20251001,openai:gpt-4o-mini). "
+            "Emits a comparison HTML report; --baseline/--update-baseline are ignored."
+        ),
     )
     parser.add_argument("--concurrency", type=int, default=4)
     parser.add_argument("--timeout-seconds", type=float, default=60.0)
@@ -64,7 +87,10 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--max-cost",
         type=float,
         default=None,
-        help="Refuse to run if the pre-flight estimate exceeds this USD amount",
+        help=(
+            "Refuse to run if the pre-flight estimate exceeds this USD amount. "
+            "In --compare mode, the ceiling applies per model."
+        ),
     )
     parser.add_argument(
         "--force",
@@ -74,23 +100,23 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--judge-model",
         default=None,
-        help="Judge model ID for llm_judge cases. Defaults to --model.",
+        help="Judge model spec for llm_judge cases. Defaults to the model under test.",
     )
     parser.add_argument(
         "--baseline",
         type=Path,
         default=None,
-        help="Path to a baseline RunReport JSON to compare against",
+        help="Path to a baseline RunReport JSON (single-model mode only)",
     )
     parser.add_argument(
         "--update-baseline",
         action="store_true",
-        help="Save the current run as the new baseline at --baseline (or results/baseline.json)",
+        help="Save the current run as the new baseline (single-model mode only)",
     )
     parser.add_argument(
         "--allow-dataset-mismatch",
         action="store_true",
-        help="Override the dataset_version safety check when comparing to --baseline",
+        help="Override the dataset_version safety check",
     )
     parser.add_argument("--results-dir", type=Path, default=Path("results"))
     parser.add_argument("--reports-dir", type=Path, default=Path("reports"))
@@ -98,10 +124,6 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-progress", action="store_true", help="Hide the progress bar")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser.parse_args(argv)
-
-
-def _build_adapter(model_id: str) -> ModelAdapter:
-    return AnthropicAdapter(model_id=model_id)
 
 
 def _print_summary(report: RunReport, diff: RegressionDiff | None, console: Console) -> None:
@@ -153,6 +175,47 @@ def _print_summary(report: RunReport, diff: RegressionDiff | None, console: Cons
     console.print(summary)
 
 
+def _print_comparison_summary(comparison: ComparisonReport, console: Console) -> None:
+    table = Table(title=f"Comparison: {comparison.suite} (dataset {comparison.dataset_version})")
+    table.add_column("Model")
+    table.add_column("Pass rate", justify="right")
+    table.add_column("Total cost", justify="right")
+    table.add_column("p50 ms", justify="right")
+    table.add_column("Δ pass vs ref", justify="right")
+    table.add_column("Δ cost vs ref", justify="right")
+
+    for i, s in enumerate(comparison.summaries):
+        label = f"[bold]{s.label}[/bold]"
+        if i == 0:
+            label += " [dim](ref)[/dim]"
+        if i == 0:
+            row = [
+                label,
+                f"{s.pass_rate * 100:.1f}%",
+                f"${s.total_cost_usd:.4f}",
+                f"{s.p50_latency_ms:.0f}",
+                "-",
+                "-",
+            ]
+        else:
+            pr_delta = comparison.overall_pass_rate_delta(i)
+            cost_delta = comparison.cost_delta_usd(i)
+            pr_colour = "green" if pr_delta > 0 else "red" if pr_delta < 0 else ""
+            cost_colour = "green" if cost_delta < 0 else "red" if cost_delta > 0 else ""
+            pr_cell = f"{pr_delta * 100:+.1f}%"
+            cost_cell = f"${cost_delta:+.4f}"
+            row = [
+                label,
+                f"{s.pass_rate * 100:.1f}%",
+                f"${s.total_cost_usd:.4f}",
+                f"{s.p50_latency_ms:.0f}",
+                f"[{pr_colour}]{pr_cell}[/{pr_colour}]" if pr_colour else pr_cell,
+                f"[{cost_colour}]{cost_cell}[/{cost_colour}]" if cost_colour else cost_cell,
+            ]
+        table.add_row(*row)
+    console.print(table)
+
+
 def _validate_model_in_price_map(model_id: str, price_map: dict[str, PriceEntry]) -> PriceEntry:
     if model_id not in price_map:
         raise SystemExit(
@@ -184,41 +247,67 @@ def _baseline_path(args: argparse.Namespace) -> Path:
     return Path(args.results_dir) / "baseline.json"
 
 
-async def _amain(args: argparse.Namespace) -> int:
-    console = Console()
-    suite_path = args.evals_dir / f"{args.suite}.yaml"
-    suite = load_suite(suite_path, known_scorers=set(DEFAULT_SCORER_NAMES))
-    price_map = load_price_map()
-    price = _validate_model_in_price_map(args.model, price_map)
+def _parse_compare_specs(raw: str) -> list[ModelSpec]:
+    """Split `--compare` value on commas at the **top level**, not inside provider:model.
 
-    if args.max_cost is not None:
-        estimate = estimate_cost(suite, price_map, args.model)
-        if estimate.estimated_usd > args.max_cost and not args.force:
-            console.print(
-                f"[red]Pre-flight estimate ${estimate.estimated_usd:.4f} exceeds "
-                f"--max-cost ${args.max_cost:.4f}. Use --force to run anyway.[/red]"
-            )
-            return EXIT_BUDGET_REFUSED
+    A bare model_id can't contain commas, so a simple `split(",")` is safe.
+    """
+    parts = [p.strip() for p in raw.split(",") if p.strip()]
+    if len(parts) < 2:
+        raise SystemExit("--compare needs at least two comma-separated model specs")
+    return [parse_model_spec(p) for p in parts]
+
+
+def _preflight_budget(
+    suite: EvalSuite,
+    spec: ModelSpec,
+    price_map: dict[str, PriceEntry],
+    max_cost: float | None,
+    force: bool,
+    console: Console,
+) -> int | None:
+    """Return EXIT_BUDGET_REFUSED if the estimate is over budget; None otherwise."""
+    if max_cost is None:
+        return None
+    estimate = estimate_cost(suite, price_map, spec.model_id)
+    if estimate.estimated_usd > max_cost and not force:
         console.print(
-            f"Pre-flight estimate: ${estimate.estimated_usd:.4f} for "
-            f"{estimate.case_count} case(s) on {estimate.model_id}"
+            f"[red]{spec.display}: pre-flight estimate ${estimate.estimated_usd:.4f} exceeds "
+            f"--max-cost ${max_cost:.4f}. Use --force to run anyway.[/red]"
         )
+        return EXIT_BUDGET_REFUSED
+    console.print(
+        f"Pre-flight estimate: ${estimate.estimated_usd:.4f} for "
+        f"{estimate.case_count} case(s) on {spec.display}"
+    )
+    return None
 
-    adapter = _build_adapter(args.model)
+
+async def _run_one_model(
+    spec: ModelSpec,
+    suite: EvalSuite,
+    args: argparse.Namespace,
+    price_map: dict[str, PriceEntry],
+    console: Console,
+) -> RunReport:
+    """Run the suite once against one model and return the report."""
+    price = _validate_model_in_price_map(spec.model_id, price_map)
+    adapter: ModelAdapter = build_adapter(spec)
     cost_fn = make_cost_fn(price)
 
     needs_judge = any(c.scorer == "llm_judge" for c in suite.cases)
     if needs_judge:
-        judge_model_id = args.judge_model or args.model
-        judge_price = _validate_model_in_price_map(judge_model_id, price_map)
-        judge_adapter = _build_adapter(judge_model_id)
+        judge_spec = parse_model_spec(args.judge_model) if args.judge_model else spec
+        judge_price = _validate_model_in_price_map(judge_spec.model_id, price_map)
+        judge_adapter = build_adapter(judge_spec)
         judge_cost_fn = make_cost_fn(judge_price)
-        console.print(f"Judge model: [cyan]{judge_model_id}[/cyan]")
+        console.print(f"Judge model: [cyan]{judge_spec.display}[/cyan]")
         scorers = build_default_registry(judge_adapter, judge_cost_fn)
     else:
         scorers = build_default_registry()
 
-    report = await run_suite(
+    console.print(f"\n[bold]Running[/bold] [cyan]{spec.display}[/cyan]")
+    return await run_suite(
         suite=suite,
         adapter=adapter,
         scorers=scorers,
@@ -228,6 +317,21 @@ async def _amain(args: argparse.Namespace) -> int:
         temperature_override=args.temperature,
         show_progress=not args.no_progress,
     )
+
+
+async def _amain_single(
+    args: argparse.Namespace,
+    suite: EvalSuite,
+    price_map: dict[str, PriceEntry],
+    console: Console,
+) -> int:
+    spec = parse_model_spec(args.model)
+
+    refused = _preflight_budget(suite, spec, price_map, args.max_cost, args.force, console)
+    if refused is not None:
+        return refused
+
+    report = await _run_one_model(spec, suite, args, price_map, console)
 
     results_path = save_report(report, args.results_dir)
     console.print(f"\nSaved results: [cyan]{results_path}[/cyan]")
@@ -267,6 +371,57 @@ async def _amain(args: argparse.Namespace) -> int:
     if diff is not None and diff.has_regression:
         return EXIT_REGRESSION
     return EXIT_OK
+
+
+async def _amain_compare(
+    args: argparse.Namespace,
+    suite: EvalSuite,
+    price_map: dict[str, PriceEntry],
+    console: Console,
+) -> int:
+    specs = _parse_compare_specs(args.compare)
+    console.print(f"Comparing [bold]{len(specs)}[/bold] models on suite [cyan]{suite.name}[/cyan]")
+
+    for spec in specs:
+        refused = _preflight_budget(suite, spec, price_map, args.max_cost, args.force, console)
+        if refused is not None:
+            return refused
+
+    if args.baseline is not None or args.update_baseline:
+        console.print(
+            "[yellow]Note: --baseline / --update-baseline are ignored in --compare mode.[/yellow]"
+        )
+
+    reports: list[RunReport] = []
+    for spec in specs:
+        report = await _run_one_model(spec, suite, args, price_map, console)
+        save_report(report, args.results_dir)
+        reports.append(report)
+
+    comparison = compare_reports(
+        reports,
+        labels=[s.display for s in specs],
+        allow_dataset_mismatch=args.allow_dataset_mismatch,
+    )
+
+    comparison_id = reports[0].run_id
+    report_path = args.reports_dir / f"{comparison_id}_compare.html"
+    render_comparison(comparison, report_path)
+    console.print(f"\nSaved comparison report: [cyan]{report_path}[/cyan]")
+
+    _print_comparison_summary(comparison, console)
+    return EXIT_OK
+
+
+async def _amain(args: argparse.Namespace) -> int:
+    console = Console()
+    suite_path = args.evals_dir / f"{args.suite}.yaml"
+    suite = load_suite(suite_path, known_scorers=set(DEFAULT_SCORER_NAMES))
+    price_map = load_price_map()
+
+    if args.compare:
+        return await _amain_compare(args, suite, price_map, console)
+    return await _amain_single(args, suite, price_map, console)
 
 
 def main(argv: list[str] | None = None) -> int:

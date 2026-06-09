@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>llm-eval-harness comparison: {{ comparison.suite }}</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           max-width: 1080px; margin: 2rem auto; padding: 0 1rem; color: #1f2328;
+           line-height: 1.5; }
+    h1 { margin-bottom: 0.2rem; }
+    h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .meta { color: #59636e; font-size: 0.9rem; }
+    table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1.5rem; }
+    th, td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #eaecef; text-align: left; }
+    th { background: #f6f8fa; font-weight: 600; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pass { color: #1a7f37; font-weight: 600; }
+    .fail { color: #cf222e; font-weight: 600; }
+    .delta-neg { color: #cf222e; font-weight: 600; }
+    .delta-pos { color: #1a7f37; font-weight: 600; }
+    .delta-zero { color: #59636e; }
+    .ref-tag { display: inline-block; background: #d1d9e0; color: #1f2328;
+               padding: 0 0.5rem; border-radius: 999px; font-size: 0.75rem;
+               margin-left: 0.4rem; vertical-align: middle; }
+    .verdict { padding: 0.75rem 1rem; border-radius: 6px; margin: 1rem 0;
+               background: #ddf4ff; border: 1px solid #b6e3ff; color: #0969da; }
+    code { background: #f6f8fa; padding: 1px 6px; border-radius: 3px;
+           font-family: ui-monospace, monospace; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>Model comparison: {{ comparison.suite }}</h1>
+  <p class="meta">
+    Dataset <code>{{ comparison.dataset_version }}</code> ·
+    Reference model <code>{{ comparison.reference_label }}</code> ·
+    Started {{ comparison.started_at }} · Finished {{ comparison.finished_at }}
+  </p>
+
+  <div class="verdict">
+    <strong>How to read this:</strong> deltas compare each candidate against the
+    reference model (the first one). Positive pass-rate delta = candidate
+    performs better on that category. Positive cost / latency delta = candidate
+    is more expensive / slower.
+  </div>
+
+  <h2>Per-model summary</h2>
+  <table>
+    <tr>
+      <th>Model</th>
+      <th class="num">Pass rate</th>
+      <th class="num">Cases</th>
+      <th class="num">Total cost</th>
+      <th class="num">p50 latency</th>
+      <th class="num">p95 latency</th>
+      <th class="num">Δ pass</th>
+      <th class="num">Δ cost</th>
+      <th class="num">Δ p50</th>
+    </tr>
+    {% for s in comparison.summaries %}
+      {% set is_ref = loop.index0 == 0 %}
+      <tr>
+        <td>
+          <code>{{ s.label }}</code>
+          {% if is_ref %}<span class="ref-tag">reference</span>{% endif %}
+          <div class="meta">resolved: <code>{{ s.model }}</code></div>
+        </td>
+        <td class="num">{{ '%.1f' % (s.pass_rate * 100) }}%</td>
+        <td class="num">{{ s.case_count }}</td>
+        <td class="num">${{ '%.4f' % s.total_cost_usd }}</td>
+        <td class="num">{{ '%.0f' % s.p50_latency_ms }} ms</td>
+        <td class="num">{{ '%.0f' % s.p95_latency_ms }} ms</td>
+        {% if is_ref %}
+          <td class="num delta-zero">—</td>
+          <td class="num delta-zero">—</td>
+          <td class="num delta-zero">—</td>
+        {% else %}
+          {% set pr_delta = comparison.overall_pass_rate_delta(loop.index0) %}
+          {% set cost_delta = comparison.cost_delta_usd(loop.index0) %}
+          {% set lat_delta = comparison.p50_latency_delta_ms(loop.index0) %}
+          <td class="num"><span class="{% if pr_delta > 0 %}delta-pos{% elif pr_delta < 0 %}delta-neg{% else %}delta-zero{% endif %}">{{ '%+.1f' % (pr_delta * 100) }}%</span></td>
+          <td class="num"><span class="{% if cost_delta < 0 %}delta-pos{% elif cost_delta > 0 %}delta-neg{% else %}delta-zero{% endif %}">${{ '%+.4f' % cost_delta }}</span></td>
+          <td class="num"><span class="{% if lat_delta < 0 %}delta-pos{% elif lat_delta > 0 %}delta-neg{% else %}delta-zero{% endif %}">{{ '%+.0f' % lat_delta }} ms</span></td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+  </table>
+
+  <h2>Per-category pass rate</h2>
+  <table>
+    <tr>
+      <th>Category</th>
+      {% for label in comparison.labels %}
+        <th class="num">
+          <code>{{ label }}</code>
+          {% if loop.index0 == 0 %}<span class="ref-tag">ref</span>{% endif %}
+        </th>
+      {% endfor %}
+      {% for label in comparison.labels %}
+        {% if loop.index0 > 0 %}<th class="num">Δ {{ label }}</th>{% endif %}
+      {% endfor %}
+    </tr>
+    {% set categories = [] %}
+    {% for s in comparison.summaries %}
+      {% for cat in s.pass_rate_by_category.keys() %}
+        {% if cat not in categories %}{% set _ = categories.append(cat) %}{% endif %}
+      {% endfor %}
+    {% endfor %}
+    {% for cat in categories | sort %}
+      <tr>
+        <td>{{ cat }}</td>
+        {% for s in comparison.summaries %}
+          <td class="num">
+            {% set rate = s.pass_rate_by_category.get(cat) %}
+            {% if rate is none %}<em class="meta">—</em>{% else %}{{ '%.1f' % (rate * 100) }}%{% endif %}
+          </td>
+        {% endfor %}
+        {% for s in comparison.summaries %}
+          {% if loop.index0 > 0 %}
+            {% set delta = comparison.pass_rate_delta_by_category(loop.index0).get(cat) %}
+            <td class="num">
+              {% if delta is none %}<em class="meta">—</em>
+              {% elif delta > 0 %}<span class="delta-pos">{{ '%+.1f' % (delta * 100) }}%</span>
+              {% elif delta < 0 %}<span class="delta-neg">{{ '%+.1f' % (delta * 100) }}%</span>
+              {% else %}<span class="delta-zero">0.0%</span>{% endif %}
+            </td>
+          {% endif %}
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
+
+  <h2>Per-case outcomes</h2>
+  <p class="meta">A green check marks pass, a red cross marks fail. Same case, side by side.</p>
+  <table>
+    <tr>
+      <th>Case</th>
+      <th>Category</th>
+      {% for label in comparison.labels %}
+        <th class="num">
+          <code>{{ label }}</code>
+          {% if loop.index0 == 0 %}<span class="ref-tag">ref</span>{% endif %}
+        </th>
+      {% endfor %}
+    </tr>
+    {% for outcome in comparison.case_outcomes %}
+      <tr>
+        <td><code>{{ outcome.case_id }}</code></td>
+        <td>{{ outcome.category }}</td>
+        {% for passed in outcome.passed_by_model %}
+          <td class="num">
+            {% if passed %}<span class="pass">PASS</span>{% else %}<span class="fail">FAIL</span>{% endif %}
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>

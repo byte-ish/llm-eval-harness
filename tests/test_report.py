@@ -1,10 +1,11 @@
-"""Tests for `harness.report` — HTML rendering."""
+"""Tests for `harness.report` — HTML rendering (single + comparison)."""
 
 from pathlib import Path
 
+from harness.compare import compare_reports
 from harness.models import EvalResult, RunReport, ScorerResult
 from harness.regression import compare_to_baseline
-from harness.report import render
+from harness.report import render, render_comparison
 
 
 def _result(case_id: str, category: str, passed: bool, response: str = "ok") -> EvalResult:
@@ -105,4 +106,37 @@ class TestEscaping:
         out = render(report, None, tmp_path / "r.html")
         html = out.read_text(encoding="utf-8")
         assert "<script>" not in html
+        assert "&lt;script&gt;" in html
+
+
+class TestRenderComparison:
+    def test_writes_comparison_html(self, tmp_path: Path) -> None:
+        ref = _report([_result("c1", "a", True), _result("c2", "b", False)])
+        cand = _report([_result("c1", "a", True), _result("c2", "b", True)])
+        comparison = compare_reports([ref, cand], ["anthropic:ref", "openai:cand"])
+        out = render_comparison(comparison, tmp_path / "compare.html")
+        html = out.read_text(encoding="utf-8")
+        assert "anthropic:ref" in html
+        assert "openai:cand" in html
+        assert "reference" in html  # ref-tag
+        assert "Per-category pass rate" in html
+        assert "Per-case outcomes" in html
+
+    def test_comparison_shows_pass_rate_deltas(self, tmp_path: Path) -> None:
+        ref = _report([_result("c1", "a", True), _result("c2", "a", False)])
+        cand = _report([_result("c1", "a", True), _result("c2", "a", True)])
+        comparison = compare_reports([ref, cand], ["ref", "cand"])
+        out = render_comparison(comparison, tmp_path / "compare.html")
+        html = out.read_text(encoding="utf-8")
+        # cand gained one case → +50% overall delta and +50% on category "a"
+        assert "+50.0%" in html
+
+    def test_comparison_escapes_user_supplied_labels(self, tmp_path: Path) -> None:
+        ref = _report([_result("c1", "a", True)])
+        cand = _report([_result("c1", "a", True)])
+        evil_label = "<script>x</script>"
+        comparison = compare_reports([ref, cand], [evil_label, "safe"])
+        out = render_comparison(comparison, tmp_path / "compare.html")
+        html = out.read_text(encoding="utf-8")
+        assert "<script>x</script>" not in html
         assert "&lt;script&gt;" in html
