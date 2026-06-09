@@ -1,0 +1,22 @@
+services:
+  # The harness itself. Run via `docker compose run --rm harness <flags>`.
+  harness:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: llm-eval-harness:local
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    volumes:
+      - ./evals:/app/evals:ro
+      - ./results:/app/results
+      - ./reports:/app/reports
+
+  # Static viewer for the rendered HTML reports. After a run, browse
+  # http://localhost:8080/<run_id>.html or .../sample_report.html.
+  report-viewer:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./reports:/usr/share/nginx/html:ro
