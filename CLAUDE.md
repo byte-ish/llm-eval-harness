@@ -10,7 +10,7 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phase 3 — AI-427 — regex scorer + scorer registry** (active branch: `feat/AI-427-phase-3-regex-registry`)
+**Phase 4 — AI-428 — LLM-as-judge scorer** (active branch: `feat/AI-428-phase-4-llm-judge`)
 
 Update this line when a phase merges and the next phase begins.
 

@@ -15,7 +15,7 @@ class RegexMatchScorer:
 
     name = "regex_match"
 
-    def score(self, response: str, case: EvalCase) -> ScorerResult:
+    async def score(self, response: str, case: EvalCase) -> ScorerResult:
         if not case.expected_regex:
             raise ValueError(
                 f"regex_match case '{case.id}' has no expected_regex; "

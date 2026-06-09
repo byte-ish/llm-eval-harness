@@ -54,6 +54,7 @@ class ScorerResult:
     passed: bool
     score: float  # 0.0 to 1.0, even for binary scorers
     reason: str
+    cost_usd: float = 0.0  # cost incurred by the scorer itself (e.g. judge model calls)
 
 
 @dataclass(frozen=True)
