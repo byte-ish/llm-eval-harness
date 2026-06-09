@@ -10,9 +10,13 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phase 7 — AI-431 — Multi-model comparison (OpenAI + Bedrock adapters) — stretch** (active branch: `feat/AI-431-phase-7-multi-model`)
+**Phases 0–7 complete (AI-424 → AI-431 all Done).** The planned build is
+finished — the harness is feature-complete per `project_plan.md`. No active
+phase. Treat any new work as an explicitly-scoped follow-up (e.g. a new Jira
+ticket for `embedding_sim`, more providers, or a fresh feature) and cut a
+branch off `main` for it.
 
-Update this line when a phase merges and the next phase begins.
+Update this line when the next phase begins.
 
 ## Commands
 
