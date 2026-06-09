@@ -7,7 +7,7 @@ worked examples for each scorer.
 ## File-level fields
 
 | Field | Required? | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `name` | optional | Suite name. Defaults to the file stem if omitted. |
 | `dataset_version` | **required** | Semver-style string. Bump on every dataset change. The Phase 5 regression detector refuses to compare runs across mismatched versions. |
 | `default_system` | optional | Suite-wide system prompt. Each case can override. |
@@ -17,7 +17,7 @@ worked examples for each scorer.
 ## Case-level fields
 
 | Field | Required? | Notes |
-|---|---|---|
+| --- | --- | --- |
 | `id` | **required** | Unique within the suite. |
 | `category` | **required** | Used for per-category pass-rate regression checks. |
 | `scorer` | **required** | One of: `exact_match`, `regex_match` (Phase 3), `llm_judge` (Phase 4). |

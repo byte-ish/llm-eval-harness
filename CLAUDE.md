@@ -10,7 +10,7 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phase 1 — AI-425 — data contracts + first scorer** (active branch: `feat/AI-425-phase-1-contracts`)
+**Phase 2 — AI-426 — async runner + Anthropic adapter + storage** (active branch: `feat/AI-426-phase-2-runner`)
 
 Update this line when a phase merges and the next phase begins.
 
