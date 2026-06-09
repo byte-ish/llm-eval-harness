@@ -28,7 +28,12 @@ from rich.table import Table
 
 from harness import __version__
 from harness.adapters.base import ModelAdapter
-from harness.adapters.factory import ModelSpec, build_adapter, parse_model_spec
+from harness.adapters.factory import (
+    ZERO_COST_PROVIDERS,
+    ModelSpec,
+    build_adapter,
+    parse_model_spec,
+)
 from harness.budget import estimate_cost, make_cost_fn
 from harness.compare import ComparisonReport, compare_reports
 from harness.config import PriceEntry, load_price_map, load_suite
@@ -216,13 +221,19 @@ def _print_comparison_summary(comparison: ComparisonReport, console: Console) ->
     console.print(table)
 
 
-def _validate_model_in_price_map(model_id: str, price_map: dict[str, PriceEntry]) -> PriceEntry:
-    if model_id not in price_map:
+_ZERO_COST_PRICE = PriceEntry(input_per_million=0.0, output_per_million=0.0)
+
+
+def _resolve_price(spec: ModelSpec, price_map: dict[str, PriceEntry]) -> PriceEntry:
+    """Look up the price for a spec. Zero-cost providers bypass the price map."""
+    if spec.provider in ZERO_COST_PROVIDERS:
+        return _ZERO_COST_PRICE
+    if spec.model_id not in price_map:
         raise SystemExit(
-            f"model_id '{model_id}' has no entry in price map; "
+            f"model_id '{spec.model_id}' has no entry in price map; "
             "add it to harness/prices.yaml before running."
         )
-    return price_map[model_id]
+    return price_map[spec.model_id]
 
 
 def _print_regression_verdict(diff: RegressionDiff, console: Console) -> None:
@@ -269,6 +280,12 @@ def _preflight_budget(
     """Return EXIT_BUDGET_REFUSED if the estimate is over budget; None otherwise."""
     if max_cost is None:
         return None
+    if spec.provider in ZERO_COST_PROVIDERS:
+        console.print(
+            f"Pre-flight estimate: $0.0000 for {len(suite.cases)} case(s) on "
+            f"{spec.display} (local model, zero-cost provider)"
+        )
+        return None
     estimate = estimate_cost(suite, price_map, spec.model_id)
     if estimate.estimated_usd > max_cost and not force:
         console.print(
@@ -291,14 +308,14 @@ async def _run_one_model(
     console: Console,
 ) -> RunReport:
     """Run the suite once against one model and return the report."""
-    price = _validate_model_in_price_map(spec.model_id, price_map)
+    price = _resolve_price(spec, price_map)
     adapter: ModelAdapter = build_adapter(spec)
     cost_fn = make_cost_fn(price)
 
     needs_judge = any(c.scorer == "llm_judge" for c in suite.cases)
     if needs_judge:
         judge_spec = parse_model_spec(args.judge_model) if args.judge_model else spec
-        judge_price = _validate_model_in_price_map(judge_spec.model_id, price_map)
+        judge_price = _resolve_price(judge_spec, price_map)
         judge_adapter = build_adapter(judge_spec)
         judge_cost_fn = make_cost_fn(judge_price)
         console.print(f"Judge model: [cyan]{judge_spec.display}[/cyan]")

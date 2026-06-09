@@ -10,13 +10,11 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phases 0–7 complete (AI-424 → AI-431 all Done).** The planned build is
-finished — the harness is feature-complete per `project_plan.md`. No active
-phase. Treat any new work as an explicitly-scoped follow-up (e.g. a new Jira
-ticket for `embedding_sim`, more providers, or a fresh feature) and cut a
-branch off `main` for it.
-
-Update this line when the next phase begins.
+**Active: AI-432 — Ollama provider adapter (post-Phase-7 follow-up).** All
+original phases (AI-424 → AI-431) shipped; this is a scoped extension to add
+local-model evals via Ollama on the existing `ModelAdapter` Protocol. Branch:
+`feat/AI-432-ollama-adapter`. Revert this line to "feature-complete" wording
+once AI-432 merges.
 
 ## Commands
 

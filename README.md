@@ -69,7 +69,10 @@ Models are named `<provider>:<model_id>`:
 | `anthropic:claude-opus-4-7` | Anthropic API | `AnthropicAdapter` |
 | `openai:gpt-4o-mini` | OpenAI API | `OpenAIAdapter` |
 | `bedrock:anthropic.claude-haiku-4-5-v1:0` | AWS Bedrock | `BedrockAdapter` |
+| `ollama:llama3.2` | Local Ollama server (`OLLAMA_HOST`, default `http://localhost:11434`) | `OllamaAdapter` |
 | `claude-opus-4-7` (bare) | Anthropic (default) | `AnthropicAdapter` |
+
+`ollama:` is a **zero-cost provider** — local models don't need a `prices.yaml` entry, and `--max-cost` always lets them through. Useful for offline / private-data evals and for three-way comparisons that include a self-hosted open-weights model alongside paid APIs.
 
 `--compare` accepts a comma-separated list of specs and emits a side-by-side HTML report at `reports/<run_id>_compare.html` showing per-category pass-rate deltas, cost delta, and latency delta against the first model (the reference).
 

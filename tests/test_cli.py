@@ -281,6 +281,58 @@ def test_compare_budget_refused_returns_exit_3(
     assert exit_code == 3
 
 
+def test_ollama_runs_without_price_map_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Ollama is a zero-cost provider — no prices.yaml entry should be required."""
+    evals_dir = _write_minimal_suite(tmp_path)
+    monkeypatch.setattr(run_evals, "load_price_map", lambda: _PRICES)
+    _patch_adapter_factory(monkeypatch, {"llama3.2": "hello world"})
+
+    exit_code = run_evals.main(
+        [
+            "--suite",
+            "tiny",
+            "--model",
+            "ollama:llama3.2",
+            "--evals-dir",
+            str(evals_dir),
+            "--results-dir",
+            str(tmp_path / "results"),
+            "--reports-dir",
+            str(tmp_path / "reports"),
+            "--no-progress",
+        ]
+    )
+    assert exit_code == 0
+
+
+def test_ollama_passes_tight_budget_check(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Zero-cost providers should sail through even an aggressive --max-cost ceiling."""
+    evals_dir = _write_minimal_suite(tmp_path)
+    monkeypatch.setattr(run_evals, "load_price_map", lambda: _PRICES)
+    _patch_adapter_factory(monkeypatch, {"llama3.2": "hello world"})
+
+    exit_code = run_evals.main(
+        [
+            "--suite",
+            "tiny",
+            "--model",
+            "ollama:llama3.2",
+            "--max-cost",
+            "0.0000001",
+            "--evals-dir",
+            str(evals_dir),
+            "--results-dir",
+            str(tmp_path / "results"),
+            "--reports-dir",
+            str(tmp_path / "reports"),
+            "--no-progress",
+        ]
+    )
+    assert exit_code == 0
+
+
 def test_provider_prefix_routes_via_factory(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -71,6 +71,7 @@ Do not add anything outside this list without asking first.
 | `mypy` | Static type checking (dev dep) | Phase 0 |
 | `pre-commit` | Format/lint hooks on commit (dev dep) | Phase 0 |
 | `boto3-stubs[bedrock-runtime]` | Boto3 typing stubs for mypy --strict (dev dep) | Phase 7 |
+| `httpx` | Async HTTP client for the Ollama adapter (also a transitive dep of anthropic / openai) | AI-432 |
 
 Tooling: `uv` for env + dependency management, Python 3.12, `ruff` for lint/format,
 `mypy --strict` for type checking, `pre-commit` for commit-time hooks.
