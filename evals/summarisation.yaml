@@ -1,5 +1,5 @@
 name: summarisation
-dataset_version: "1.1.0"
+dataset_version: "1.2.0"
 
 default_system: |
   You are a financial summarisation assistant. Given a snippet of business
@@ -147,3 +147,20 @@ cases:
       The FDA approved Nuvarex on 2026-03-15. Reply with ONLY the approval
       date in YYYY-MM-DD format.
     expected_regex: '\d{4}-\d{2}-\d{2}'
+
+  # ----- subjective_quality (llm_judge) -----
+  - id: judge_001
+    category: subjective_quality
+    scorer: llm_judge
+    user: |
+      Acme Corp announced Q3 2026 revenue of $4.2 billion, up 18% year-over-year,
+      beating analyst expectations of $3.9 billion. Net income came in at
+      $620 million, with operating margin expanding 200 basis points to 22%.
+      Provide a one-paragraph summary suitable for an institutional investor
+      briefing.
+    judge_rubric: |
+      Rate the response from 0.0 to 1.0 on three dimensions, weighted equally:
+        1. Factual accuracy (every number and entity matches the source)
+        2. Inclusion of the headline metrics (revenue, growth, beat-vs-expectations)
+        3. Professional tone fit for institutional investors
+      A score of 0.7 or higher means the summary is publishable as-is.

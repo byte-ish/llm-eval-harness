@@ -23,7 +23,7 @@ from harness.budget import estimate_cost, make_cost_fn
 from harness.config import PriceEntry, load_price_map, load_suite
 from harness.models import RunReport
 from harness.runner import run_suite
-from harness.scorers import build_default_registry
+from harness.scorers import DEFAULT_SCORER_NAMES, build_default_registry
 from harness.store import save
 
 EXIT_OK = 0
@@ -59,6 +59,11 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--force",
         action="store_true",
         help="Run even if --max-cost would refuse",
+    )
+    parser.add_argument(
+        "--judge-model",
+        default=None,
+        help="Judge model ID for llm_judge cases. Defaults to --model.",
     )
     parser.add_argument("--results-dir", type=Path, default=Path("results"))
     parser.add_argument("--evals-dir", type=Path, default=Path("evals"))
@@ -111,9 +116,8 @@ def _validate_model_in_price_map(model_id: str, price_map: dict[str, PriceEntry]
 
 async def _amain(args: argparse.Namespace) -> int:
     console = Console()
-    scorers = build_default_registry()
     suite_path = args.evals_dir / f"{args.suite}.yaml"
-    suite = load_suite(suite_path, known_scorers=set(scorers.keys()))
+    suite = load_suite(suite_path, known_scorers=set(DEFAULT_SCORER_NAMES))
     price_map = load_price_map()
     price = _validate_model_in_price_map(args.model, price_map)
 
@@ -132,6 +136,17 @@ async def _amain(args: argparse.Namespace) -> int:
 
     adapter = _build_adapter(args.model)
     cost_fn = make_cost_fn(price)
+
+    needs_judge = any(c.scorer == "llm_judge" for c in suite.cases)
+    if needs_judge:
+        judge_model_id = args.judge_model or args.model
+        judge_price = _validate_model_in_price_map(judge_model_id, price_map)
+        judge_adapter = _build_adapter(judge_model_id)
+        judge_cost_fn = make_cost_fn(judge_price)
+        console.print(f"Judge model: [cyan]{judge_model_id}[/cyan]")
+        scorers = build_default_registry(judge_adapter, judge_cost_fn)
+    else:
+        scorers = build_default_registry()
 
     report = await run_suite(
         suite=suite,

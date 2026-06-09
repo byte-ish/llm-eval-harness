@@ -127,6 +127,10 @@ def _resolve_case(
             f"{path}: case '{case_id}' uses `regex_match` but has no `expected_regex`"
         )
     judge_rubric_value = raw.get("judge_rubric")
+    if scorer_name == "llm_judge" and not judge_rubric_value:
+        raise SuiteValidationError(
+            f"{path}: case '{case_id}' uses `llm_judge` but has no `judge_rubric`"
+        )
     temperature_value = raw.get("temperature")
 
     temperature: float | None = float(temperature_value) if temperature_value is not None else None

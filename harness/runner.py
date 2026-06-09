@@ -91,8 +91,9 @@ async def run_suite(
                 )
 
             resolved_model_ids.append(response.resolved_model_id)
-            scorer_result, error = _score(case, response.text, scorers)
-            cost = cost_fn(response.input_tokens, response.output_tokens)
+            scorer_result, error = await _score(case, response.text, scorers)
+            adapter_cost = cost_fn(response.input_tokens, response.output_tokens)
+            total_cost = adapter_cost + scorer_result.cost_usd
 
             progress.advance(task_id)
             return EvalResult(
@@ -103,7 +104,7 @@ async def run_suite(
                 latency_ms=response.latency_ms,
                 input_tokens=response.input_tokens,
                 output_tokens=response.output_tokens,
-                cost_usd=cost,
+                cost_usd=total_cost,
                 model=response.resolved_model_id,
                 temperature=temperature,
                 error=error,
@@ -137,7 +138,7 @@ def _resolve_temperature(case: EvalCase, override: float | None) -> float:
     return 0.0
 
 
-def _score(
+async def _score(
     case: EvalCase,
     response_text: str,
     scorers: dict[str, Scorer],
@@ -147,7 +148,7 @@ def _score(
         msg = f"unknown scorer '{case.scorer}'"
         return ScorerResult(passed=False, score=0.0, reason=msg), msg
     try:
-        return scorer.score(response_text, case), None
+        return await scorer.score(response_text, case), None
     except Exception as exc:
         return (
             ScorerResult(passed=False, score=0.0, reason=f"scorer error: {exc!r}"),
