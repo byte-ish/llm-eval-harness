@@ -1,5 +1,5 @@
 name: summarisation
-dataset_version: "1.0.0"
+dataset_version: "1.1.0"
 
 default_system: |
   You are a financial summarisation assistant. Given a snippet of business
@@ -122,3 +122,28 @@ cases:
       treatment of refractory multiple myeloma, based on Phase II data showing
       a 41% objective response rate.
     expected_contains: ["FDA", "NovaBio", "Nuvarex", "41%"]
+
+  # ----- formatting (regex_match) -----
+  - id: format_001
+    category: formatting
+    scorer: regex_match
+    user: |
+      Acme Corp reported Q3 revenue of $4.2 billion. Reply with ONLY the
+      revenue figure formatted as $X.YY billion (for example "$4.20 billion").
+    expected_regex: '\$\d+\.\d{2}\s+billion'
+
+  - id: format_002
+    category: formatting
+    scorer: regex_match
+    user: |
+      Vertex Pharmaceuticals (ticker: VRTX) raised guidance. Reply with ONLY
+      the ticker symbol in uppercase letters (3 to 5 characters).
+    expected_regex: '\b[A-Z]{3,5}\b'
+
+  - id: format_003
+    category: formatting
+    scorer: regex_match
+    user: |
+      The FDA approved Nuvarex on 2026-03-15. Reply with ONLY the approval
+      date in YYYY-MM-DD format.
+    expected_regex: '\d{4}-\d{2}-\d{2}'
