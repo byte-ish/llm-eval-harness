@@ -28,14 +28,16 @@ class SuiteValidationError(ValueError):
     """Raised when a YAML suite fails validation at load time."""
 
 
-def load_suite(path: Path) -> EvalSuite:
+def load_suite(path: Path, known_scorers: set[str] | None = None) -> EvalSuite:
     """Load a YAML suite and return a fully-validated `EvalSuite`.
 
     Validates:
       - top-level `dataset_version` is present
       - every case has a resolvable `system` and `user` (case or suite default)
       - every case has `id`, `category`, and `scorer`
+      - if `known_scorers` is provided, every `scorer` value is in that set
       - every `exact_match` case has non-empty `expected_contains`
+      - every `regex_match` case has a non-empty `expected_regex`
     """
     with path.open("r", encoding="utf-8") as f:
         loaded = yaml.safe_load(f)
@@ -62,7 +64,7 @@ def load_suite(path: Path) -> EvalSuite:
     for i, raw_case in enumerate(raw_cases):
         if not isinstance(raw_case, dict):
             raise SuiteValidationError(f"{path}: case at index {i} must be a YAML mapping")
-        cases.append(_resolve_case(raw_case, default_system, default_user, path, i))
+        cases.append(_resolve_case(raw_case, default_system, default_user, path, i, known_scorers))
 
     return EvalSuite(
         name=name,
@@ -79,6 +81,7 @@ def _resolve_case(
     default_user: str | None,
     path: Path,
     index: int,
+    known_scorers: set[str] | None,
 ) -> EvalCase:
     case_id_value = raw.get("id")
     if not case_id_value:
@@ -102,9 +105,16 @@ def _resolve_case(
     scorer_value = raw.get("scorer")
     if not scorer_value:
         raise SuiteValidationError(f"{path}: case '{case_id}' missing required `scorer`")
+    scorer_name = str(scorer_value)
+
+    if known_scorers is not None and scorer_name not in known_scorers:
+        raise SuiteValidationError(
+            f"{path}: case '{case_id}' uses unknown scorer '{scorer_name}'; "
+            f"known scorers: {sorted(known_scorers)}"
+        )
 
     expected_contains = [str(p) for p in raw.get("expected_contains") or []]
-    if str(scorer_value) == "exact_match" and not expected_contains:
+    if scorer_name == "exact_match" and not expected_contains:
         raise SuiteValidationError(
             f"{path}: case '{case_id}' uses `exact_match` but has empty "
             "`expected_contains`; a scorer with nothing to check is a "
@@ -112,6 +122,10 @@ def _resolve_case(
         )
 
     expected_regex_value = raw.get("expected_regex")
+    if scorer_name == "regex_match" and not expected_regex_value:
+        raise SuiteValidationError(
+            f"{path}: case '{case_id}' uses `regex_match` but has no `expected_regex`"
+        )
     judge_rubric_value = raw.get("judge_rubric")
     temperature_value = raw.get("temperature")
 
@@ -120,7 +134,7 @@ def _resolve_case(
     return EvalCase(
         id=case_id,
         category=str(category_value),
-        scorer=str(scorer_value),
+        scorer=scorer_name,
         user=str(user_value),
         system=str(system_value),
         expected_contains=expected_contains,

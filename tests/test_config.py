@@ -204,12 +204,75 @@ cases:
         assert suite.cases[0].temperature == 0.4
 
     def test_summarisation_suite_loads(self) -> None:
-        # The shipped suite must load cleanly — it's what Phase 2 will run.
+        # The shipped suite must load cleanly — it's what the runner consumes.
         suite = load_suite(Path("evals/summarisation.yaml"))
-        assert suite.dataset_version == "1.0.0"
-        assert len(suite.cases) >= 12
+        assert suite.dataset_version == "1.1.0"
+        assert len(suite.cases) >= 15
         assert all(c.system for c in suite.cases)
         assert all(c.user for c in suite.cases)
+
+    def test_summarisation_suite_loads_with_known_scorers(self) -> None:
+        suite = load_suite(
+            Path("evals/summarisation.yaml"),
+            known_scorers={"exact_match", "regex_match"},
+        )
+        assert any(c.scorer == "regex_match" for c in suite.cases)
+        assert any(c.scorer == "exact_match" for c in suite.cases)
+
+    def test_regex_match_with_no_expected_regex_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(SuiteValidationError, match="regex_match"):
+            load_suite(
+                _write_suite(
+                    tmp_path,
+                    """
+dataset_version: "1.0.0"
+default_system: s
+default_user: u
+cases:
+  - id: c1
+    category: cat
+    scorer: regex_match
+""",
+                )
+            )
+
+    def test_unknown_scorer_raises_when_known_scorers_provided(self, tmp_path: Path) -> None:
+        with pytest.raises(SuiteValidationError, match="unknown scorer"):
+            load_suite(
+                _write_suite(
+                    tmp_path,
+                    """
+dataset_version: "1.0.0"
+default_system: s
+default_user: u
+cases:
+  - id: c1
+    category: cat
+    scorer: not_a_real_scorer
+    expected_contains: ["x"]
+""",
+                ),
+                known_scorers={"exact_match", "regex_match"},
+            )
+
+    def test_unknown_scorer_allowed_when_known_scorers_is_none(self, tmp_path: Path) -> None:
+        # Backward compat: existing callers omit known_scorers and validation skips.
+        suite = load_suite(
+            _write_suite(
+                tmp_path,
+                """
+dataset_version: "1.0.0"
+default_system: s
+default_user: u
+cases:
+  - id: c1
+    category: cat
+    scorer: not_a_real_scorer
+    expected_contains: ["x"]
+""",
+            ),
+        )
+        assert suite.cases[0].scorer == "not_a_real_scorer"
 
 
 class TestLoadPriceMap:

@@ -23,8 +23,7 @@ from harness.budget import estimate_cost, make_cost_fn
 from harness.config import PriceEntry, load_price_map, load_suite
 from harness.models import RunReport
 from harness.runner import run_suite
-from harness.scorers import ExactMatchScorer
-from harness.scorers.base import Scorer
+from harness.scorers import build_default_registry
 from harness.store import save
 
 EXIT_OK = 0
@@ -66,10 +65,6 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--no-progress", action="store_true", help="Hide the progress bar")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return parser.parse_args(argv)
-
-
-def _build_scorer_registry() -> dict[str, Scorer]:
-    return {"exact_match": ExactMatchScorer()}
 
 
 def _build_adapter(model_id: str) -> ModelAdapter:
@@ -116,8 +111,9 @@ def _validate_model_in_price_map(model_id: str, price_map: dict[str, PriceEntry]
 
 async def _amain(args: argparse.Namespace) -> int:
     console = Console()
+    scorers = build_default_registry()
     suite_path = args.evals_dir / f"{args.suite}.yaml"
-    suite = load_suite(suite_path)
+    suite = load_suite(suite_path, known_scorers=set(scorers.keys()))
     price_map = load_price_map()
     price = _validate_model_in_price_map(args.model, price_map)
 
@@ -135,7 +131,6 @@ async def _amain(args: argparse.Namespace) -> int:
         )
 
     adapter = _build_adapter(args.model)
-    scorers = _build_scorer_registry()
     cost_fn = make_cost_fn(price)
 
     report = await run_suite(
