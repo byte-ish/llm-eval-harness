@@ -1,0 +1,299 @@
+{
+  "dataset_version": "1.2.0",
+  "finished_at": "2026-06-09T09:01:34+00:00",
+  "harness_version": "0.1.0",
+  "model": "claude-opus-4-7-20260101",
+  "results": [
+    {
+      "case_id": "earnings_001",
+      "category": "earnings_summary",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Acme Corp posted Q3 2026 revenue of $4.2 billion, up 18% year-over-year, beating the $3.9 billion analyst consensus. Net income reached $620 million.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "earnings_002",
+      "category": "earnings_summary",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Northwind Logistics narrowed its Q2 loss to $44 million from $61 million a year earlier, on revenue up 7% to $1.1 billion.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 5 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "earnings_003",
+      "category": "earnings_summary",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Helios Semiconductor reported full-year 2025 revenue of $12.6 billion, down 4% from 2024. Operating margin contracted from 17% to 11%.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "guidance_001",
+      "category": "guidance_change",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Brightline Software raised its FY26 revenue guidance to $2.8-2.9 billion (prior: $2.6-2.7 billion) on stronger enterprise renewals.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "guidance_002",
+      "category": "guidance_change",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Quanta Energy cut its FY26 EBITDA outlook to $900 million from a prior midpoint of $1.05 billion, citing weaker LNG prices and a delayed Texas pipeline.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "guidance_003",
+      "category": "guidance_change",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Vertex Pharmaceuticals reaffirmed its 2026 product revenue guidance of $11.0-$11.5 billion despite a softer Q1.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "ma_001",
+      "category": "ma_activity",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Apex Industrial will acquire Caldera Pipeline for $7.4 billion in cash, expected to close Q4 2026 subject to regulatory approval.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "ma_002",
+      "category": "ma_activity",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Solstice Bank Group walked away from a planned tie-up with Riverstone Financial after EU competition pushback.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": false,
+        "reason": "3/4 matched; missing: ['terminated']",
+        "score": 0.75
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "ma_003",
+      "category": "ma_activity",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "Glendale Capital completed its $5.8 billion take-private of TerraSat Communications, with TerraSat shareholders receiving $42 per share in cash.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "reg_001",
+      "category": "regulatory_notice",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "The SEC charged Beacon Capital Advisors over undisclosed conflicts of interest in its proprietary trading desk; Beacon agreed to pay $185 million to settle.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "reg_002",
+      "category": "regulatory_notice",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "The European Commission opened a formal antitrust investigation into Lumina Technologies' bundling of cloud storage and AI inference, sending a Statement of Objections.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "reg_003",
+      "category": "regulatory_notice",
+      "cost_usd": 0.0042,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 920.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 120,
+      "response": "The FDA granted accelerated approval to NovaBio's Nuvarex for refractory multiple myeloma, based on Phase II data with a 41% objective response rate.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "all 4 expected phrase(s) present",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "format_001",
+      "category": "formatting",
+      "cost_usd": 0.0008,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 420.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 8,
+      "response": "$4.20 billion",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "matched: $4.20 billion",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "format_002",
+      "category": "formatting",
+      "cost_usd": 0.0006,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 380.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 3,
+      "response": "VRTX",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "matched: VRTX",
+        "score": 1.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "format_003",
+      "category": "formatting",
+      "cost_usd": 0.0007,
+      "error": null,
+      "input_tokens": 180,
+      "latency_ms": 410.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 6,
+      "response": "March 15, 2026",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": false,
+        "reason": "no match for: \\d{4}-\\d{2}-\\d{2}",
+        "score": 0.0
+      },
+      "temperature": 0.0
+    },
+    {
+      "case_id": "judge_001",
+      "category": "subjective_quality",
+      "cost_usd": 0.0218,
+      "error": null,
+      "input_tokens": 320,
+      "latency_ms": 1850.0,
+      "model": "claude-opus-4-7-20260101",
+      "output_tokens": 240,
+      "response": "Acme Corp's Q3 2026 results showcased durable demand: revenue of $4.2 billion (up 18% YoY) outpaced the $3.9 billion consensus, while net income of $620 million and a 200-bps operating-margin expansion to 22% point to operating leverage in the model.",
+      "scorer_result": {
+        "cost_usd": 0.0,
+        "passed": true,
+        "reason": "Accurate on every number and entity; covers headline metrics (revenue, growth, beat); tone is appropriately analytical.",
+        "score": 0.88
+      },
+      "temperature": 0.0
+    }
+  ],
+  "run_id": "20260609-090000000000",
+  "started_at": "2026-06-09T09:00:00+00:00",
+  "suite": "summarisation"
+}

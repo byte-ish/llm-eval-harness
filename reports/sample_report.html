@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>llm-eval-harness: summarisation (20260609-090000000000)</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1f2328;
+           line-height: 1.5; }
+    h1 { margin-bottom: 0.2rem; }
+    h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .meta { color: #59636e; font-size: 0.9rem; }
+    table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1.5rem; }
+    th, td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #eaecef; text-align: left; }
+    th { background: #f6f8fa; font-weight: 600; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pass { color: #1a7f37; font-weight: 600; }
+    .fail { color: #cf222e; font-weight: 600; }
+    .regression-row { background: #fff5f5; }
+    .delta-neg { color: #cf222e; font-weight: 600; }
+    .delta-pos { color: #1a7f37; font-weight: 600; }
+    .banner { padding: 0.75rem 1rem; border-radius: 6px; margin: 1rem 0; }
+    .banner-fail { background: #ffebe9; border: 1px solid #ffcecb; color: #82071e; }
+    .banner-pass { background: #dafbe1; border: 1px solid #aceebb; color: #0f5132; }
+    .case { border-left: 4px solid #d1d9e0; padding: 0.75rem 1rem; margin: 0.5rem 0;
+            border-radius: 0 4px 4px 0; background: #f9fafb; }
+    .case.failed { border-left-color: #cf222e; }
+    .case.passed { border-left-color: #1a7f37; }
+    .case h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+    .case .response { background: white; padding: 0.5rem 0.75rem; border-radius: 4px;
+                       font-family: ui-monospace, "SF Mono", Menlo, monospace;
+                       font-size: 0.85rem; white-space: pre-wrap; margin: 0.5rem 0;
+                       border: 1px solid #eaecef; }
+    .case .reason { font-size: 0.9rem; color: #59636e; }
+    code { background: #f6f8fa; padding: 1px 6px; border-radius: 3px;
+           font-family: ui-monospace, monospace; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>summarisation</h1>
+  <p class="meta">
+    Run <code>20260609-090000000000</code> ·
+    Model <code>claude-opus-4-7-20260101</code> ·
+    Dataset <code>1.2.0</code> ·
+    Harness <code>0.1.0</code>
+  </p>
+
+
+
+  <h2>Summary</h2>
+  <table>
+    <tr><th>Pass rate</th><td class="num">87.5% (14 / 16)</td></tr>
+    <tr><th>Total cost</th><td class="num">$0.0743</td></tr>
+    <tr><th>p50 latency</th><td class="num">920 ms</td></tr>
+    <tr><th>p95 latency</th><td class="num">1152 ms</td></tr>
+    <tr><th>Started</th><td>2026-06-09T09:00:00+00:00</td></tr>
+    <tr><th>Finished</th><td>2026-06-09T09:01:34+00:00</td></tr>
+  </table>
+
+  <h2>By category</h2>
+  <table>
+    <tr>
+      <th>Category</th>
+      <th class="num">Pass rate</th>
+      <th class="num">Cases</th>
+
+    </tr>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+      <tr class="">
+        <td>earnings_summary</td>
+        <td class="num">100.0%</td>
+        <td class="num">3</td>
+
+      </tr>
+
+
+
+
+      <tr class="">
+        <td>formatting</td>
+        <td class="num">66.7%</td>
+        <td class="num">3</td>
+
+      </tr>
+
+
+
+
+      <tr class="">
+        <td>guidance_change</td>
+        <td class="num">100.0%</td>
+        <td class="num">3</td>
+
+      </tr>
+
+
+
+
+      <tr class="">
+        <td>ma_activity</td>
+        <td class="num">66.7%</td>
+        <td class="num">3</td>
+
+      </tr>
+
+
+
+
+      <tr class="">
+        <td>regulatory_notice</td>
+        <td class="num">100.0%</td>
+        <td class="num">3</td>
+
+      </tr>
+
+
+
+
+      <tr class="">
+        <td>subjective_quality</td>
+        <td class="num">100.0%</td>
+        <td class="num">1</td>
+
+      </tr>
+
+  </table>
+
+  <h2>Cases</h2>
+
+    <div class="case passed">
+      <h3>
+        <code>earnings_001</code>
+        <span class="meta">[earnings_summary · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">Acme Corp posted Q3 2026 revenue of $4.2 billion, up 18% year-over-year, beating the $3.9 billion analyst consensus. Net income reached $620 million.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>earnings_002</code>
+        <span class="meta">[earnings_summary · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">Northwind Logistics narrowed its Q2 loss to $44 million from $61 million a year earlier, on revenue up 7% to $1.1 billion.</div>
+      <p class="reason">all 5 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>earnings_003</code>
+        <span class="meta">[earnings_summary · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">Helios Semiconductor reported full-year 2025 revenue of $12.6 billion, down 4% from 2024. Operating margin contracted from 17% to 11%.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>guidance_001</code>
+        <span class="meta">[guidance_change · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">Brightline Software raised its FY26 revenue guidance to $2.8-2.9 billion (prior: $2.6-2.7 billion) on stronger enterprise renewals.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>guidance_002</code>
+        <span class="meta">[guidance_change · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">Quanta Energy cut its FY26 EBITDA outlook to $900 million from a prior midpoint of $1.05 billion, citing weaker LNG prices and a delayed Texas pipeline.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>guidance_003</code>
+        <span class="meta">[guidance_change · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">Vertex Pharmaceuticals reaffirmed its 2026 product revenue guidance of $11.0-$11.5 billion despite a softer Q1.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>ma_001</code>
+        <span class="meta">[ma_activity · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">Apex Industrial will acquire Caldera Pipeline for $7.4 billion in cash, expected to close Q4 2026 subject to regulatory approval.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case failed">
+      <h3>
+        <code>ma_002</code>
+        <span class="meta">[ma_activity · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="fail">
+          FAIL
+          (0.75)
+        </span>
+      </h3>
+      <div class="response">Solstice Bank Group walked away from a planned tie-up with Riverstone Financial after EU competition pushback.</div>
+      <p class="reason">3/4 matched; missing: [&#39;terminated&#39;]</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>ma_003</code>
+        <span class="meta">[ma_activity · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">Glendale Capital completed its $5.8 billion take-private of TerraSat Communications, with TerraSat shareholders receiving $42 per share in cash.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>reg_001</code>
+        <span class="meta">[regulatory_notice · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">The SEC charged Beacon Capital Advisors over undisclosed conflicts of interest in its proprietary trading desk; Beacon agreed to pay $185 million to settle.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>reg_002</code>
+        <span class="meta">[regulatory_notice · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">The European Commission opened a formal antitrust investigation into Lumina Technologies&#39; bundling of cloud storage and AI inference, sending a Statement of Objections.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>reg_003</code>
+        <span class="meta">[regulatory_notice · 300 tokens · 920 ms · $0.0042]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">The FDA granted accelerated approval to NovaBio&#39;s Nuvarex for refractory multiple myeloma, based on Phase II data with a 41% objective response rate.</div>
+      <p class="reason">all 4 expected phrase(s) present</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>format_001</code>
+        <span class="meta">[formatting · 188 tokens · 420 ms · $0.0008]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">$4.20 billion</div>
+      <p class="reason">matched: $4.20 billion</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>format_002</code>
+        <span class="meta">[formatting · 183 tokens · 380 ms · $0.0006]</span>
+        <span class="pass">
+          PASS
+          (1.00)
+        </span>
+      </h3>
+      <div class="response">VRTX</div>
+      <p class="reason">matched: VRTX</p>
+
+    </div>
+
+    <div class="case failed">
+      <h3>
+        <code>format_003</code>
+        <span class="meta">[formatting · 186 tokens · 410 ms · $0.0007]</span>
+        <span class="fail">
+          FAIL
+          (0.00)
+        </span>
+      </h3>
+      <div class="response">March 15, 2026</div>
+      <p class="reason">no match for: \d{4}-\d{2}-\d{2}</p>
+
+    </div>
+
+    <div class="case passed">
+      <h3>
+        <code>judge_001</code>
+        <span class="meta">[subjective_quality · 560 tokens · 1850 ms · $0.0218]</span>
+        <span class="pass">
+          PASS
+          (0.88)
+        </span>
+      </h3>
+      <div class="response">Acme Corp&#39;s Q3 2026 results showcased durable demand: revenue of $4.2 billion (up 18% YoY) outpaced the $3.9 billion consensus, while net income of $620 million and a 200-bps operating-margin expansion to 22% point to operating leverage in the model.</div>
+      <p class="reason">Accurate on every number and entity; covers headline metrics (revenue, growth, beat); tone is appropriately analytical.</p>
+
+    </div>
+
+</body>
+</html>

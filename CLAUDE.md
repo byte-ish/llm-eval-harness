@@ -10,7 +10,7 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phase 5 — AI-429 — regression detection + HTML report** (active branch: `feat/AI-429-phase-5-regression`)
+**Phase 6 — AI-430 — CI workflow + README + sample artifacts + Docker** (active branch: `feat/AI-430-phase-6-ci-readme`)
 
 Update this line when a phase merges and the next phase begins.
 
