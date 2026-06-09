@@ -206,18 +206,36 @@ cases:
     def test_summarisation_suite_loads(self) -> None:
         # The shipped suite must load cleanly — it's what the runner consumes.
         suite = load_suite(Path("evals/summarisation.yaml"))
-        assert suite.dataset_version == "1.1.0"
-        assert len(suite.cases) >= 15
+        assert suite.dataset_version == "1.2.0"
+        assert len(suite.cases) >= 16
         assert all(c.system for c in suite.cases)
         assert all(c.user for c in suite.cases)
 
     def test_summarisation_suite_loads_with_known_scorers(self) -> None:
         suite = load_suite(
             Path("evals/summarisation.yaml"),
-            known_scorers={"exact_match", "regex_match"},
+            known_scorers={"exact_match", "regex_match", "llm_judge"},
         )
         assert any(c.scorer == "regex_match" for c in suite.cases)
         assert any(c.scorer == "exact_match" for c in suite.cases)
+        assert any(c.scorer == "llm_judge" for c in suite.cases)
+
+    def test_llm_judge_with_no_judge_rubric_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(SuiteValidationError, match="llm_judge"):
+            load_suite(
+                _write_suite(
+                    tmp_path,
+                    """
+dataset_version: "1.0.0"
+default_system: s
+default_user: u
+cases:
+  - id: c1
+    category: cat
+    scorer: llm_judge
+""",
+                )
+            )
 
     def test_regex_match_with_no_expected_regex_raises(self, tmp_path: Path) -> None:
         with pytest.raises(SuiteValidationError, match="regex_match"):

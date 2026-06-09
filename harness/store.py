@@ -55,6 +55,7 @@ def _result_from_dict(raw: dict[str, Any]) -> EvalResult:
             passed=bool(scorer_raw["passed"]),
             score=float(scorer_raw["score"]),
             reason=str(scorer_raw["reason"]),
+            cost_usd=float(scorer_raw.get("cost_usd", 0.0)),
         ),
         latency_ms=float(raw["latency_ms"]),
         input_tokens=int(raw["input_tokens"]),

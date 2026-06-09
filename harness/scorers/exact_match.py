@@ -15,7 +15,7 @@ class ExactMatchScorer:
 
     name = "exact_match"
 
-    def score(self, response: str, case: EvalCase) -> ScorerResult:
+    async def score(self, response: str, case: EvalCase) -> ScorerResult:
         expected = case.expected_contains
         if not expected:
             raise ValueError(
