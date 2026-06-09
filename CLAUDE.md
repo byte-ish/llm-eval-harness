@@ -10,7 +10,7 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phase 4 — AI-428 — LLM-as-judge scorer** (active branch: `feat/AI-428-phase-4-llm-judge`)
+**Phase 5 — AI-429 — regression detection + HTML report** (active branch: `feat/AI-429-phase-5-regression`)
 
 Update this line when a phase merges and the next phase begins.
 

@@ -4,7 +4,9 @@ Usage:
   python run_evals.py --suite summarisation --model claude-opus-4-7
 
 Exit codes:
-  0 - success
+  0 - success (no regression)
+  1 - regression detected vs --baseline
+  2 - dataset_version mismatch between --baseline and current run
   3 - pre-flight budget refused (use --force to bypass)
 """
 
@@ -22,11 +24,20 @@ from harness.adapters.base import ModelAdapter
 from harness.budget import estimate_cost, make_cost_fn
 from harness.config import PriceEntry, load_price_map, load_suite
 from harness.models import RunReport
+from harness.regression import (
+    DatasetVersionMismatch,
+    RegressionDiff,
+    compare_to_baseline,
+)
+from harness.report import render as render_report
 from harness.runner import run_suite
 from harness.scorers import DEFAULT_SCORER_NAMES, build_default_registry
-from harness.store import save
+from harness.store import load as load_report
+from harness.store import save as save_report
 
 EXIT_OK = 0
+EXIT_REGRESSION = 1
+EXIT_DATASET_MISMATCH = 2
 EXIT_BUDGET_REFUSED = 3
 
 
@@ -65,7 +76,24 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=None,
         help="Judge model ID for llm_judge cases. Defaults to --model.",
     )
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=None,
+        help="Path to a baseline RunReport JSON to compare against",
+    )
+    parser.add_argument(
+        "--update-baseline",
+        action="store_true",
+        help="Save the current run as the new baseline at --baseline (or results/baseline.json)",
+    )
+    parser.add_argument(
+        "--allow-dataset-mismatch",
+        action="store_true",
+        help="Override the dataset_version safety check when comparing to --baseline",
+    )
     parser.add_argument("--results-dir", type=Path, default=Path("results"))
+    parser.add_argument("--reports-dir", type=Path, default=Path("reports"))
     parser.add_argument("--evals-dir", type=Path, default=Path("evals"))
     parser.add_argument("--no-progress", action="store_true", help="Hide the progress bar")
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
@@ -76,24 +104,44 @@ def _build_adapter(model_id: str) -> ModelAdapter:
     return AnthropicAdapter(model_id=model_id)
 
 
-def _print_summary(report: RunReport, console: Console) -> None:
+def _print_summary(report: RunReport, diff: RegressionDiff | None, console: Console) -> None:
     table = Table(title=f"Results: {report.suite} (dataset {report.dataset_version})")
     table.add_column("Category")
     table.add_column("Pass rate", justify="right")
     table.add_column("Cases", justify="right")
+    if diff is not None:
+        table.add_column("Δ baseline", justify="right")
 
     counts: dict[str, int] = {}
     for r in report.results:
         counts[r.category] = counts.get(r.category, 0) + 1
+
     for category, rate in sorted(report.pass_rate_by_category.items()):
-        table.add_row(category, f"{rate * 100:.1f}%", str(counts[category]))
+        row = [category, f"{rate * 100:.1f}%", str(counts[category])]
+        if diff is not None:
+            delta = diff.per_category_delta.get(category)
+            if delta is None:
+                row.append("[dim]new[/dim]")
+            else:
+                colour = "red" if delta < 0 else "green" if delta > 0 else ""
+                cell = f"{delta * 100:+.1f}%"
+                row.append(f"[{colour}]{cell}[/{colour}]" if colour else cell)
+        table.add_row(*row)
 
     table.add_section()
-    table.add_row(
+    overall_row = [
         "[bold]Overall",
         f"[bold]{report.pass_rate * 100:.1f}%",
         f"[bold]{len(report.results)}",
-    )
+    ]
+    if diff is not None:
+        d = diff.overall_pass_rate_delta
+        colour = "red" if d < 0 else "green" if d > 0 else ""
+        cell = f"{d * 100:+.1f}%"
+        overall_row.append(
+            f"[bold][{colour}]{cell}[/{colour}][/bold]" if colour else f"[bold]{cell}[/bold]"
+        )
+    table.add_row(*overall_row)
     console.print(table)
 
     summary = Table(show_header=False, box=None)
@@ -112,6 +160,28 @@ def _validate_model_in_price_map(model_id: str, price_map: dict[str, PriceEntry]
             "add it to harness/prices.yaml before running."
         )
     return price_map[model_id]
+
+
+def _print_regression_verdict(diff: RegressionDiff, console: Console) -> None:
+    if diff.has_regression:
+        console.print(
+            f"[bold red]REGRESSION:[/bold red] {len(diff.flagged_categories)} "
+            f"category(s) dropped > {diff.drop_threshold * 100:.0f}%: "
+            f"{', '.join(diff.flagged_categories)}"
+        )
+        if diff.newly_failing_case_ids:
+            console.print(f"Newly failing case(s): {', '.join(diff.newly_failing_case_ids)}")
+    else:
+        console.print(
+            f"[bold green]OK:[/bold green] no regression "
+            f"(overall {diff.overall_pass_rate_delta * 100:+.1f}% vs baseline)"
+        )
+
+
+def _baseline_path(args: argparse.Namespace) -> Path:
+    if args.baseline is not None:
+        return Path(args.baseline)
+    return Path(args.results_dir) / "baseline.json"
 
 
 async def _amain(args: argparse.Namespace) -> int:
@@ -159,9 +229,43 @@ async def _amain(args: argparse.Namespace) -> int:
         show_progress=not args.no_progress,
     )
 
-    path = save(report, args.results_dir)
-    console.print(f"\nSaved: [cyan]{path}[/cyan]")
-    _print_summary(report, console)
+    results_path = save_report(report, args.results_dir)
+    console.print(f"\nSaved results: [cyan]{results_path}[/cyan]")
+
+    diff: RegressionDiff | None = None
+    baseline_path = _baseline_path(args)
+    if args.baseline is not None or (args.update_baseline and baseline_path.exists()):
+        if baseline_path.exists():
+            baseline = load_report(baseline_path)
+            try:
+                diff = compare_to_baseline(
+                    report,
+                    baseline,
+                    allow_dataset_mismatch=args.allow_dataset_mismatch,
+                )
+            except DatasetVersionMismatch as exc:
+                console.print(f"[bold red]{exc}[/bold red]")
+                return EXIT_DATASET_MISMATCH
+        else:
+            console.print(
+                f"[yellow]Baseline {baseline_path} not found; skipping comparison.[/yellow]"
+            )
+
+    report_path = args.reports_dir / f"{report.run_id}.html"
+    render_report(report, diff, report_path)
+    console.print(f"Saved report:  [cyan]{report_path}[/cyan]")
+
+    _print_summary(report, diff, console)
+    if diff is not None:
+        _print_regression_verdict(diff, console)
+
+    if args.update_baseline:
+        baseline_path.parent.mkdir(parents=True, exist_ok=True)
+        baseline_path.write_text(results_path.read_text(encoding="utf-8"), encoding="utf-8")
+        console.print(f"[bold]Updated baseline:[/bold] [cyan]{baseline_path}[/cyan]")
+
+    if diff is not None and diff.has_regression:
+        return EXIT_REGRESSION
     return EXIT_OK
 
 
