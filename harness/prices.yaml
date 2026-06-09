@@ -1,9 +1,14 @@
 # Model price map for cost computation. Values are USD per million tokens.
-# Source: Anthropic published rate card. Update when prices change.
+# Sources: provider published rate cards. Update when prices change.
 #
 # A model not present here causes load_price_map() lookups in the adapter to
 # raise — by design, so we never silently report $0 for an unknown model.
+#
+# Keys are the **resolved provider model IDs** (the bare ID without a
+# `provider:` prefix), since `EvalResult.model` carries the resolved ID and
+# the cost function must key off the same thing.
 
+# --- Anthropic (direct API) ---
 claude-opus-4-7:
   input_per_million: 15.0
   output_per_million: 75.0
@@ -15,3 +20,21 @@ claude-sonnet-4-6:
 claude-haiku-4-5-20251001:
   input_per_million: 0.80
   output_per_million: 4.0
+
+# --- OpenAI ---
+gpt-4o:
+  input_per_million: 2.50
+  output_per_million: 10.0
+
+gpt-4o-mini:
+  input_per_million: 0.15
+  output_per_million: 0.60
+
+# --- AWS Bedrock (Claude family) ---
+anthropic.claude-haiku-4-5-v1:0:
+  input_per_million: 0.80
+  output_per_million: 4.0
+
+anthropic.claude-sonnet-4-v1:0:
+  input_per_million: 3.0
+  output_per_million: 15.0
