@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>llm-eval-harness: {{ report.suite }} ({{ report.run_id }})</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           max-width: 960px; margin: 2rem auto; padding: 0 1rem; color: #1f2328;
+           line-height: 1.5; }
+    h1 { margin-bottom: 0.2rem; }
+    h2 { border-bottom: 1px solid #d1d9e0; padding-bottom: 0.3rem; margin-top: 2rem; }
+    .meta { color: #59636e; font-size: 0.9rem; }
+    table { border-collapse: collapse; width: 100%; margin: 0.5rem 0 1.5rem; }
+    th, td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #eaecef; text-align: left; }
+    th { background: #f6f8fa; font-weight: 600; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .pass { color: #1a7f37; font-weight: 600; }
+    .fail { color: #cf222e; font-weight: 600; }
+    .regression-row { background: #fff5f5; }
+    .delta-neg { color: #cf222e; font-weight: 600; }
+    .delta-pos { color: #1a7f37; font-weight: 600; }
+    .banner { padding: 0.75rem 1rem; border-radius: 6px; margin: 1rem 0; }
+    .banner-fail { background: #ffebe9; border: 1px solid #ffcecb; color: #82071e; }
+    .banner-pass { background: #dafbe1; border: 1px solid #aceebb; color: #0f5132; }
+    .case { border-left: 4px solid #d1d9e0; padding: 0.75rem 1rem; margin: 0.5rem 0;
+            border-radius: 0 4px 4px 0; background: #f9fafb; }
+    .case.failed { border-left-color: #cf222e; }
+    .case.passed { border-left-color: #1a7f37; }
+    .case h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+    .case .response { background: white; padding: 0.5rem 0.75rem; border-radius: 4px;
+                       font-family: ui-monospace, "SF Mono", Menlo, monospace;
+                       font-size: 0.85rem; white-space: pre-wrap; margin: 0.5rem 0;
+                       border: 1px solid #eaecef; }
+    .case .reason { font-size: 0.9rem; color: #59636e; }
+    code { background: #f6f8fa; padding: 1px 6px; border-radius: 3px;
+           font-family: ui-monospace, monospace; font-size: 0.85em; }
+  </style>
+</head>
+<body>
+  <h1>{{ report.suite }}</h1>
+  <p class="meta">
+    Run <code>{{ report.run_id }}</code> ·
+    Model <code>{{ report.model }}</code> ·
+    Dataset <code>{{ report.dataset_version }}</code> ·
+    Harness <code>{{ report.harness_version }}</code>
+  </p>
+
+  {% if diff %}
+    {% if diff.has_regression %}
+      <div class="banner banner-fail">
+        <strong>Regression detected.</strong>
+        Flagged categories (drop &gt; {{ '%.0f' % (diff.drop_threshold * 100) }}%):
+        {{ diff.flagged_categories | join(', ') }}.
+        {% if diff.newly_failing_case_ids %}
+          Newly failing cases: {{ diff.newly_failing_case_ids | join(', ') }}.
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="banner banner-pass">
+        <strong>No regression.</strong>
+        Overall pass rate {{ '%+.1f' % (diff.overall_pass_rate_delta * 100) }}%
+        vs baseline.
+      </div>
+    {% endif %}
+  {% endif %}
+
+  <h2>Summary</h2>
+  <table>
+    <tr><th>Pass rate</th><td class="num">{{ '%.1f' % (report.pass_rate * 100) }}% ({{ report.results | selectattr('scorer_result.passed') | list | length }} / {{ report.results | length }})</td></tr>
+    <tr><th>Total cost</th><td class="num">${{ '%.4f' % report.total_cost_usd }}</td></tr>
+    <tr><th>p50 latency</th><td class="num">{{ '%.0f' % report.p50_latency_ms }} ms</td></tr>
+    <tr><th>p95 latency</th><td class="num">{{ '%.0f' % report.p95_latency_ms }} ms</td></tr>
+    <tr><th>Started</th><td>{{ report.started_at }}</td></tr>
+    <tr><th>Finished</th><td>{{ report.finished_at }}</td></tr>
+  </table>
+
+  <h2>By category</h2>
+  <table>
+    <tr>
+      <th>Category</th>
+      <th class="num">Pass rate</th>
+      <th class="num">Cases</th>
+      {% if diff %}<th class="num">Δ vs baseline</th>{% endif %}
+    </tr>
+    {% set category_counts = {} %}
+    {% for r in report.results %}
+      {% set _ = category_counts.update({r.category: category_counts.get(r.category, 0) + 1}) %}
+    {% endfor %}
+    {% for cat in report.pass_rate_by_category.keys() | sort %}
+      {% set rate = report.pass_rate_by_category[cat] %}
+      {% set delta = diff.per_category_delta.get(cat) if diff else None %}
+      {% set flagged = cat in diff.flagged_categories if diff else False %}
+      <tr class="{% if flagged %}regression-row{% endif %}">
+        <td>{{ cat }}</td>
+        <td class="num">{{ '%.1f' % (rate * 100) }}%</td>
+        <td class="num">{{ category_counts.get(cat, 0) }}</td>
+        {% if diff %}
+          <td class="num">
+            {% if delta is none %}
+              <em>new</em>
+            {% elif delta < 0 %}
+              <span class="delta-neg">{{ '%+.1f' % (delta * 100) }}%</span>
+            {% elif delta > 0 %}
+              <span class="delta-pos">{{ '%+.1f' % (delta * 100) }}%</span>
+            {% else %}
+              0.0%
+            {% endif %}
+          </td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+  </table>
+
+  <h2>Cases</h2>
+  {% for r in report.results %}
+    <div class="case {% if r.scorer_result.passed %}passed{% else %}failed{% endif %}">
+      <h3>
+        <code>{{ r.case_id }}</code>
+        <span class="meta">[{{ r.category }} · {{ r.input_tokens + r.output_tokens }} tokens · {{ '%.0f' % r.latency_ms }} ms · ${{ '%.4f' % r.cost_usd }}]</span>
+        <span class="{% if r.scorer_result.passed %}pass{% else %}fail{% endif %}">
+          {% if r.scorer_result.passed %}PASS{% else %}FAIL{% endif %}
+          ({{ '%.2f' % r.scorer_result.score }})
+        </span>
+      </h3>
+      <div class="response">{{ r.response[:1200] }}{% if r.response | length > 1200 %} …{% endif %}</div>
+      <p class="reason">{{ r.scorer_result.reason }}</p>
+      {% if r.error %}<p class="reason fail">Error: {{ r.error }}</p>{% endif %}
+    </div>
+  {% endfor %}
+</body>
+</html>
