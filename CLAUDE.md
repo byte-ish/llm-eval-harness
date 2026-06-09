@@ -10,7 +10,7 @@ sequencing, and acceptance criteria for each phase.
 
 ## Current phase
 
-**Phase 2 — AI-426 — async runner + Anthropic adapter + storage** (active branch: `feat/AI-426-phase-2-runner`)
+**Phase 3 — AI-427 — regex scorer + scorer registry** (active branch: `feat/AI-427-phase-3-regex-registry`)
 
 Update this line when a phase merges and the next phase begins.
 
