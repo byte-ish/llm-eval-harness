@@ -66,8 +66,11 @@ Do not add anything outside this list without asking first.
 | `pytest-asyncio` | Async test support | Phase 2 |
 | `rich` | Console summary tables + progress bar | Phase 1 |
 | `jinja2` | HTML report templating | Phase 5 |
+| `openai` | OpenAI SDK (async client) | Phase 7 |
+| `boto3` | AWS Bedrock client (sync, wrapped in `asyncio.to_thread`) | Phase 7 |
 | `mypy` | Static type checking (dev dep) | Phase 0 |
 | `pre-commit` | Format/lint hooks on commit (dev dep) | Phase 0 |
+| `boto3-stubs[bedrock-runtime]` | Boto3 typing stubs for mypy --strict (dev dep) | Phase 7 |
 
 Tooling: `uv` for env + dependency management, Python 3.12, `ruff` for lint/format,
 `mypy --strict` for type checking, `pre-commit` for commit-time hooks.
