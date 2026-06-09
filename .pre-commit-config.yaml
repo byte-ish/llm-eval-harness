@@ -21,7 +21,9 @@ repos:
     rev: v1.11.2
     hooks:
       - id: mypy
-        files: ^harness/
+        files: ^(harness/|run_evals\.py$)
         args: [--strict]
         additional_dependencies:
+          - anthropic>=0.40
+          - rich>=13.7
           - types-pyyaml>=6.0
