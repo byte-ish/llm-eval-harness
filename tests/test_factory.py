@@ -9,10 +9,12 @@ from harness.adapters.bedrock import BedrockAdapter
 from harness.adapters.factory import (
     DEFAULT_PROVIDER,
     KNOWN_PROVIDERS,
+    ZERO_COST_PROVIDERS,
     ModelSpec,
     build_adapter,
     parse_model_spec,
 )
+from harness.adapters.ollama import OllamaAdapter
 from harness.adapters.openai import OpenAIAdapter
 
 
@@ -41,6 +43,19 @@ def test_bedrock_model_id_can_contain_colons() -> None:
     assert spec.model_id == "anthropic.claude-haiku-4-5-v1:0"
 
 
+def test_ollama_prefix() -> None:
+    spec = parse_model_spec("ollama:llama3.2")
+    assert spec.provider == "ollama"
+    assert spec.model_id == "llama3.2"
+
+
+def test_ollama_model_id_can_contain_colons() -> None:
+    """Ollama tags look like 'llama3.2:1b' — colons matter."""
+    spec = parse_model_spec("ollama:llama3.2:1b")
+    assert spec.provider == "ollama"
+    assert spec.model_id == "llama3.2:1b"
+
+
 def test_unknown_provider_raises() -> None:
     with pytest.raises(ValueError, match="unknown provider 'cohere'"):
         parse_model_spec("cohere:command-r-plus")
@@ -56,7 +71,17 @@ def test_known_providers_constant_is_frozen() -> None:
     assert "anthropic" in KNOWN_PROVIDERS
     assert "openai" in KNOWN_PROVIDERS
     assert "bedrock" in KNOWN_PROVIDERS
+    assert "ollama" in KNOWN_PROVIDERS
     assert DEFAULT_PROVIDER == "anthropic"
+
+
+def test_zero_cost_providers_constant() -> None:
+    assert isinstance(ZERO_COST_PROVIDERS, frozenset)
+    assert "ollama" in ZERO_COST_PROVIDERS
+    # Paid providers must NOT be marked zero-cost.
+    assert "anthropic" not in ZERO_COST_PROVIDERS
+    assert "openai" not in ZERO_COST_PROVIDERS
+    assert "bedrock" not in ZERO_COST_PROVIDERS
 
 
 def test_build_adapter_anthropic(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -79,3 +104,10 @@ def test_build_adapter_bedrock(monkeypatch: pytest.MonkeyPatch) -> None:
     with patch("harness.adapters.bedrock.boto3.client"):
         adapter = build_adapter(spec)
     assert isinstance(adapter, BedrockAdapter)
+
+
+def test_build_adapter_ollama() -> None:
+    """Ollama needs no env vars — it talks to localhost by default."""
+    spec = ModelSpec(provider="ollama", model_id="llama3.2")
+    adapter = build_adapter(spec)
+    assert isinstance(adapter, OllamaAdapter)

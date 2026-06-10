@@ -6,12 +6,14 @@ the CLI accepts a `provider:model_id` syntax:
   - ``anthropic:claude-haiku-4-5-20251001``  → ``AnthropicAdapter``
   - ``openai:gpt-4o-mini``                   → ``OpenAIAdapter``
   - ``bedrock:anthropic.claude-haiku-4-5-v1:0`` → ``BedrockAdapter``
+  - ``ollama:llama3.2``                      → ``OllamaAdapter``
 
 A bare model ID (no prefix) defaults to anthropic — preserves backward
 compatibility with Phase 6 invocations like ``--model claude-haiku-...``.
 
 Note: the model ID itself can contain colons (Bedrock IDs are
-``provider.family-version:revision``). We split on the **first** colon only.
+``provider.family-version:revision``; Ollama tags are ``family:tag``). We
+split on the **first** colon only.
 """
 
 from dataclasses import dataclass
@@ -19,10 +21,12 @@ from dataclasses import dataclass
 from harness.adapters.anthropic import AnthropicAdapter
 from harness.adapters.base import ModelAdapter
 from harness.adapters.bedrock import BedrockAdapter
+from harness.adapters.ollama import OllamaAdapter
 from harness.adapters.openai import OpenAIAdapter
 
 DEFAULT_PROVIDER = "anthropic"
-KNOWN_PROVIDERS: frozenset[str] = frozenset({"anthropic", "openai", "bedrock"})
+KNOWN_PROVIDERS: frozenset[str] = frozenset({"anthropic", "openai", "bedrock", "ollama"})
+ZERO_COST_PROVIDERS: frozenset[str] = frozenset({"ollama"})
 
 
 @dataclass(frozen=True)
@@ -69,4 +73,6 @@ def build_adapter(spec: ModelSpec) -> ModelAdapter:
         return OpenAIAdapter(model_id=spec.model_id)
     if spec.provider == "bedrock":
         return BedrockAdapter(model_id=spec.model_id)
+    if spec.provider == "ollama":
+        return OllamaAdapter(model_id=spec.model_id)
     raise ValueError(f"no adapter registered for provider {spec.provider!r}")
