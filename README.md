@@ -10,6 +10,8 @@ A **versioned, CI-gated test suite for LLM features.** Treats LLM output quality
 
 > *"I want to upgrade the model, change a prompt, or swap providers. Run my eval suite against old and new — tell me, with numbers, whether it's safe to ship."*
 
+**Why this matters more in a regulated setting.** Model risk management guidance now reaches LLM and agent systems directly — independent validation, numeric pass/fail thresholds, continuous drift monitoring, and durable records of evaluation results. Those are the primitives this harness is built around, which means in a bank or insurer an eval suite stops being an engineering nicety and becomes a compliance artifact. I work through the specifics — and the caveats on reading regulatory guidance from secondary sources — in [spring-boot-vs-fastapi-ai-microservices](https://github.com/byte-ish/spring-boot-vs-fastapi-ai-microservices#the-regulated-enterprise-question).
+
 ---
 
 ## What it does
